@@ -11,6 +11,16 @@
 
 ---
 
+## Capturas de tela
+
+**Janela principal:** nota de saúde, métricas da TV e recomendações. Os itens já aplicados ficam em cinza com o botão *Restaurar*.
+
+![Janela principal do TV Otimizador](docs/screenshots/janela-principal.png)
+
+**Acesso remoto à tela da TV:** acompanhe e controle a TV do PC, sem ir até ela. Na imagem, o scrcpy (aberto pelo botão *Abrir tela ao vivo*) mostra a tela inicial do Google TV ao vivo, sobre a janela *Tela da TV* do app.
+
+![Tela da TV ao vivo no PC via scrcpy](docs/screenshots/tela-da-tv-ao-vivo.png)
+
 ## O que ele faz
 
 - **Diagnóstico com nota de saúde (0–100)**: memória livre, uso da zram (swap), travadas por falta de memória (reclaim direto), carga do sistema, CPU, armazenamento, cache dos apps e tempo ligada.
