@@ -2,6 +2,9 @@
 
 Versões seguem [SemVer](https://semver.org/lang/pt-BR/) (`MAJOR.MINOR.PATCH`). Cada compilação também tem um número de build `AAAAMMDD.N`, exibido na splash, no título e em Configurações > Sobre.
 
+## [1.4.1] - 2026-10-22
+- Correção: falha "O nome do diretório é inválido" ao instalar o Android SDK (sdkmanager agora roda com pasta de trabalho válida e sem pipe do cmd; licenças gravadas antes). Mensagens do cmd sem acentos quebrados e saída completa de cada etapa na aba Log.
+
 ## [1.4.0] - 2026-10-22
 - Nova aba **Free My TV** para instalar a tela inicial leve e sem anúncios do projeto [Free My TV](https://freemytv.io/pt/) (simbasjungles):
   - **Android TV / Google TV:** baixa o código mais recente, compila com as suas opções (chave TMDB, cidade com busca automática de coordenadas, país, idioma, temperatura, moeda, serviços a esconder, Assistente, animações) usando o próprio `build.sh` do projeto, instala pelo ADB, libera a execução em segundo plano nas TVs TCL e abre o app. Botões para abrir e desinstalar (com o passo de voltar ao modo *Original*).

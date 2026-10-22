@@ -13,8 +13,8 @@
 
 # ---------------------------------------------------------------- versão (atualizada por tools/bump-version.ps1)
 $script:AppNome    = 'TV Otimizador'
-$script:AppVersion = '1.4.0'
-$script:AppBuild   = '20261022.7'
+$script:AppVersion = '1.4.1'
+$script:AppBuild   = '20261022.8'
 $script:AppAutor   = 'Alexandre Jeronimo Correa'
 $script:AppEmail   = 'ajcorrea@gmail.com'
 $script:AppGitHub  = 'https://github.com/ajcorrea'
@@ -1786,10 +1786,14 @@ function Get-Num([double]$v) { return $v.ToString('0.####', [Globalization.Cultu
 function Invoke-Longo([string]$cmdline, [hashtable]$amb = @{}, [string]$pasta = $null, [string]$rotulo = 'Executando', [int]$timeoutMin = 30) {
     $log = Join-Path $env:TEMP ('tvotm_' + [guid]::NewGuid().ToString('N') + '.log')
     $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = 'cmd.exe'
-    $psi.Arguments = '/d /s /c "' + $cmdline + ' > "' + $log + '" 2>&1"'
+    $psi.FileName = Join-Path $env:SystemRoot 'System32\cmd.exe'
+    # chcp 65001: mensagens do cmd em UTF-8 (sem acentos quebrados)
+    $psi.Arguments = '/d /s /c "chcp 65001 >nul & ' + $cmdline + ' > "' + $log + '" 2>&1"'
     $psi.UseShellExecute = $false; $psi.CreateNoWindow = $true
-    if ($pasta) { $psi.WorkingDirectory = $pasta }
+    # pasta de trabalho sempre válida: sem ela, o cmd e os processos filhos falham com "O nome do diretório é inválido"
+    if (-not $pasta -or -not (Test-Path -LiteralPath $pasta -PathType Container)) { $pasta = [IO.Path]::GetTempPath() }
+    $psi.WorkingDirectory = $pasta
+    $amb['TEMP'] = [IO.Path]::GetTempPath().TrimEnd('\'); $amb['TMP'] = $amb['TEMP']
     foreach ($k in $amb.Keys) { $psi.EnvironmentVariables[$k] = [string]$amb[$k] }
     $p = [Diagnostics.Process]::Start($psi)
     $sw = [Diagnostics.Stopwatch]::StartNew()
@@ -1813,7 +1817,9 @@ function Invoke-Longo([string]$cmdline, [hashtable]$amb = @{}, [string]$pasta = 
     $saida = ''
     try { $saida = [IO.File]::ReadAllText($log) } catch {}
     Remove-Item $log -Force -ErrorAction SilentlyContinue
-    return @{ Codigo = $p.ExitCode; Saida = $saida }
+    $cod = -1; try { $cod = $p.ExitCode } catch {}
+    Log ("[$rotulo] código de saída $cod`r`n  " + (($saida -split "\r?\n" | Where-Object { $_.Trim() } | Select-Object -Last 30) -join "`r`n  "))
+    return @{ Codigo = $cod; Saida = $saida }
 }
 
 function Save-Download([string]$url, [string]$destino, [double]$total, [string]$nome) {
@@ -1926,9 +1932,16 @@ function Install-BuildTools {
                 Remove-Item $z, $tmpX -Recurse -Force -ErrorAction SilentlyContinue
             }
             $amb = @{ JAVA_HOME = $script:JdkHome }
-            $r = Invoke-Longo ('(for /l %i in (1,1,40) do @echo y) | "' + $sdkm + '" --sdk_root="' + $sdk + '" --licenses') $amb $null 'Aceitando as licenças do Android SDK' 10
-            $r = Invoke-Longo ('(for /l %i in (1,1,10) do @echo y) | "' + $sdkm + '" --sdk_root="' + $sdk + '" "build-tools;34.0.0" "platforms;android-34"') $amb $null 'Baixando build-tools 34 e Android 34 (sdkmanager)' 40
-            if (-not (Test-Sdk $sdk)) { throw "O sdkmanager não instalou o build-tools/platform 34. Saída:`n$(($r.Saida -split "`n" | Select-Object -Last 12) -join "`n")" }
+            $binSdk = Split-Path $sdkm
+            # licenças padrão do Android SDK (as mesmas que o "--licenses" grava ao aceitar)
+            $dl = Join-Path $sdk 'licenses'; New-Item -ItemType Directory -Path $dl -Force | Out-Null
+            $lic = "`n24333f8a63b6825ea9c5514f83c2829b004d1fee`n8933bad161af4178b1185d1a37fbf41ea5269c55`nd56f5187479451eabf01fb78af6dfcb131a6481e"
+            if (-not (Test-Path (Join-Path $dl 'android-sdk-license'))) { [IO.File]::WriteAllText((Join-Path $dl 'android-sdk-license'), $lic) }
+            $sim = Join-Path $tmp 'sim.txt'
+            [IO.File]::WriteAllText($sim, (('y' + [Environment]::NewLine) * 60))
+            $r = Invoke-Longo ('"' + $sdkm + '" --sdk_root="' + $sdk + '" --licenses < "' + $sim + '"') $amb $binSdk 'Aceitando as licenças do Android SDK' 10
+            $r = Invoke-Longo ('"' + $sdkm + '" --sdk_root="' + $sdk + '" "build-tools;34.0.0" "platforms;android-34" < "' + $sim + '"') $amb $binSdk 'Baixando build-tools 34 e Android 34 (sdkmanager)' 40
+            if (-not (Test-Sdk $sdk)) { throw "O sdkmanager não instalou o build-tools/platform 34 (código $($r.Codigo)). Últimas linhas:`n$(($r.Saida -split "\r?\n" | Where-Object { $_.Trim() } | Select-Object -Last 12) -join "`n")`n`nA saída completa está na aba Log." }
             $script:Cfg.sdkRoot = $sdk; $script:SdkRoot = $sdk; Save-Config
             Log "Android SDK instalado em $sdk"
         }
