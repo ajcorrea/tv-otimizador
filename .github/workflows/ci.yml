@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  verificar:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sintaxe (Windows PowerShell 5.1)
+        shell: powershell
+        run: |
+          $e = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile("$PWD\TV-Otimizador.ps1", [ref]$null, [ref]$e)
+          if ($e) { $e | ForEach-Object { Write-Host "::error::linha $($_.Extent.StartLineNumber): $($_.Message)" }; exit 1 }
+          Write-Host 'Sintaxe OK'
+
+      - name: XAML (instancia todas as janelas com o WPF)
+        shell: powershell
+        run: powershell -NoProfile -STA -File tools\testar-xaml.ps1
+
+      - name: Versão do script = VERSION (e = tag, se houver)
+        shell: powershell
+        run: |
+          $v = (Get-Content VERSION -Raw).Trim()
+          $s = Get-Content TV-Otimizador.ps1 -Raw -Encoding UTF8
+          if ($s -notmatch "AppVersion\s*=\s*'$([regex]::Escape($v))'") { Write-Host "::error::VERSION ($v) diferente do AppVersion do script"; exit 1 }
+          if ($env:GITHUB_REF -like 'refs/tags/v*' -and $env:GITHUB_REF_NAME -ne "v$v") { Write-Host "::error::Tag $env:GITHUB_REF_NAME diferente de v$v"; exit 1 }
+          Write-Host "Versão $v OK"
+
+  release:
+    needs: verificar
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Montar pacote
+        run: |
+          mkdir -p dist/TV-Otimizador
+          cp TV-Otimizador.ps1 TV-Otimizador.cmd README.md LICENSE CHANGELOG.md dist/TV-Otimizador/
+          cd dist && zip -r "TV-Otimizador-${GITHUB_REF_NAME}.zip" TV-Otimizador
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          generate_release_notes: true

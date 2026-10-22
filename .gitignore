@@ -1,0 +1,7 @@
+platform-tools/
+scrcpy-*/
+dist/
+*.zip
+diag-tv_*.txt
+diagnostico-tv_*.txt
+tv-otimizador-historico.json
