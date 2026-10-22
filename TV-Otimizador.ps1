@@ -13,8 +13,8 @@
 
 # ---------------------------------------------------------------- versão (atualizada por tools/bump-version.ps1)
 $script:AppNome    = 'TV Otimizador'
-$script:AppVersion = '1.4.2'
-$script:AppBuild   = '20261022.9'
+$script:AppVersion = '1.4.3'
+$script:AppBuild   = '20261022.10'
 $script:AppAutor   = 'Alexandre Jeronimo Correa'
 $script:AppEmail   = 'ajcorrea@gmail.com'
 $script:AppGitHub  = 'https://github.com/ajcorrea'
@@ -1205,6 +1205,7 @@ function Build-Resultado($info, $mem, $top, $dmem, $disk, $pk, $cfg, $homes) {
     $script:FmtInstalado = $instalados.ContainsKey('io.freemytv')
     $script:FmtVersao = ''
     $script:FmtConectado = $true
+    $script:WifiInfo = $null
     Update-FmtTab
 
     # pacotes do catálogo
@@ -2063,6 +2064,8 @@ function Update-FmtTab {
         New-Bloco 'Esta TV (Android TV / Google TV)' 'Não instalado' 'Ajuste as opções abaixo e clique em "Compilar e instalar na TV".' @() '#FFB020' $pnlFmtTopo
     }
 
+    if ($script:FmtConectado) { Add-CardWifi }
+
     Add-Titulo $pnlFmtAcoes 'Instalação nesta TV'
     if (-not $script:BuildOk) {
         Add-CardFerramentas $pnlFmtAcoes
@@ -2152,8 +2155,14 @@ function Install-Fmt {
             throw "O adb install falhou:`n$o"
         }
         if ($script:Fabricante -match 'TCL') {
-            Invoke-Tv "appops set $($script:FmtPkg) AUTO_START allow || appops set $($script:FmtPkg) APP_AUTO_START allow" | Out-Null
-            Log 'TCL: execução em segundo plano liberada (appops AUTO_START).'
+            # cada firmware TCL chama a operação de um jeito: tenta as duas e registra qual existe
+            $liberou = $false
+            foreach ($op in 'AUTO_START', 'APP_AUTO_START') {
+                $o = (Invoke-Tv "appops set $($script:FmtPkg) $op allow" 15).Trim()
+                if ($o -match 'Unknown operation|rror') { Log "TCL appops ${op}: não existe nesta TV (normal)" }
+                else { Log "TCL appops ${op}: liberado"; $liberou = $true }
+            }
+            if (-not $liberou) { Log 'TCL: nenhuma das operações AUTO_START/APP_AUTO_START existe nesta TV.' }
         }
         Invoke-Tv "monkey -p $($script:FmtPkg) -c android.intent.category.LEANBACK_LAUNCHER 1" | Out-Null
         $script:FmtInstalado = $true; $script:FmtVersao = $versaoSrc
@@ -2168,6 +2177,14 @@ function Install-Fmt {
         Update-FmtTab
     }
     if ($ok) {
+        $script:WifiInfo = $null
+        $wf = Get-WifiInfo
+        if ($wf -and $wf.Bloqueiam.Count) {
+            Update-FmtTab
+            Show-Msg ("Atenção: a TV tem redes Wi-Fi salvas pela configuração inicial ($(($wf.Bloqueiam | ForEach-Object { $_.Ssid }) -join ', ')). " +
+                "Enquanto elas existirem, o Free My TV não consegue virar a tela inicial (ele recusa para não apagar o seu Wi-Fi).`n`n" +
+                "Use o botão 'Corrigir Wi-Fi' na aba Free My TV antes de ativar o Free My TV na TV.") 'Free My TV' 'Warning'
+        }
         $r = [System.Windows.MessageBox]::Show($win, ("Free My TV instalado e aberto na TV.`n`nFalta um passo na TV: em Free My TV > Tela inicial, escolha Free My TV e aceite o aviso " +
             "'Permitir depuração USB' marcando 'Sempre permitir' (é o próprio app usando o ADB da TV para trocar a tela inicial).`n`nAbrir a tela da TV aqui para fazer isso pelo PC?"), 'Free My TV', 'YesNo', 'Information')
         if ($r -eq 'Yes') { Open-TelaWindow }
@@ -2181,6 +2198,8 @@ function Invoke-FmtAcao([string]$tag) {
         'fmt:cidade'      { Find-Cidade }
         'fmt:ferramentas' { Install-BuildTools | Out-Null }
         'fmt:instalar'    { Install-Fmt }
+        'fmt:wifi'        { Repair-Wifi }
+        'fmt:wifiver'     { $script:WifiInfo = $null; Update-FmtTab }
         'fmt:abrir' {
             if (-not @(Connect-Tv)[-1]) { Show-Msg 'TV sem conexão.'; return }
             Invoke-Tv "monkey -p $($script:FmtPkg) -c android.intent.category.LEANBACK_LAUNCHER 1" | Out-Null
@@ -2201,6 +2220,196 @@ function Invoke-FmtAcao([string]$tag) {
         }
         'lg:instalar' { Install-Lg }
         'lg:remover'  { Remove-Lg }
+    }
+}
+
+
+# ---------------------------------------------------------------- Wi-Fi x Free My TV
+# O Free My TV desativa a configuração inicial (setupwraith) e o launcher original. O Android apaga as redes Wi-Fi
+# salvas pelo app que é desativado, então o Free My TV se recusa a ativar se alguma rede pertencer a eles.
+$script:DonosRuins = @('com.google.android.tungsten.setupwraith', 'com.google.android.apps.tv.launcherx')
+$script:WifiInfo = $null
+
+function Get-WifiInfo {
+    if ($script:WifiInfo) { return $script:WifiInfo }
+    if (-not $script:Alvo) { return $null }
+    $o = Invoke-Tv "cmd wifi list-networks; echo @@; dumpsys wifi | grep -o -E 'ID: [0-9]+ SSID|cname=[^ ]+' | head -400; echo @@; cmd wifi status; echo @@; ip -o -4 addr show" 40
+    $partes = $o -split '@@'
+    if ($partes.Count -lt 4) { return $null }
+    $redes = [ordered]@{}
+    foreach ($l in (Split-Linhas $partes[0])) {
+        if ($l -match '^\s*(\d+)\s+(.*\S)\s+(\S+)\s*$' -and $l -notmatch 'Network Id') {
+            $redes[$matches[1]] = [pscustomobject]@{ Id = $matches[1]; Ssid = $matches[2].Trim(); Seg = $matches[3].ToLower(); Dono = ''; Atual = $false }
+        }
+    }
+    $idAtual = $null
+    foreach ($m in [regex]::Matches($partes[1], 'ID: (\d+) SSID|cname=(\S+)')) {
+        if ($m.Groups[1].Success) { $idAtual = $m.Groups[1].Value }
+        elseif ($idAtual -ne $null -and $redes.Contains($idAtual)) {
+            if (-not $redes[$idAtual].Dono) { $redes[$idAtual].Dono = $m.Groups[2].Value }
+            $idAtual = $null
+        }
+    }
+    $st = $partes[2]
+    $conectado = $null
+    if ($st -match 'Net ID:\s*(\d+)') { $conectado = $matches[1] }
+    elseif ($st -match 'connected to\s+"([^"]+)"') { $ss = $matches[1]; foreach ($r in $redes.Values) { if ($r.Ssid -eq $ss) { $conectado = $r.Id } } }
+    if ($conectado -and $redes.Contains($conectado)) { $redes[$conectado].Atual = $true }
+    $cabo = [bool]($partes[3] -match '\beth\d+\s+inet\s')
+    $bloq = @($redes.Values | Where-Object { $script:DonosRuins -contains $_.Dono })
+    $script:WifiInfo = [pscustomobject]@{ Redes = @($redes.Values); Bloqueiam = $bloq; Conectada = $conectado; Cabo = $cabo; StatusBruto = $st }
+    return $script:WifiInfo
+}
+
+function Add-CardWifi {
+    $wf = Get-WifiInfo
+    if (-not $wf) {
+        New-Bloco 'Wi-Fi e Free My TV' 'Não foi possível ler as redes salvas' 'A TV não respondeu ao comando cmd wifi (alguns firmwares desligam esse recurso).' @(@{ Texto = 'Verificar de novo'; Tag = 'fmt:wifiver' }) $null $pnlFmtTopo
+        return
+    }
+    $linhas = ($wf.Redes | ForEach-Object {
+        $dono = switch ($_.Dono) { 'com.google.android.tungsten.setupwraith' { 'configuração inicial  ✗ bloqueia' } 'com.google.android.apps.tv.launcherx' { 'launcher do Google  ✗ bloqueia' } '' { '?' } default { "$($_.Dono)  ✓" } }
+        '{0}{1}  ·  salva por: {2}' -f $_.Ssid, $(if ($_.Atual) { '  (conectada)' } else { '' }), $dono
+    }) -join "`n"
+    if (-not $wf.Redes.Count) { $linhas = 'Nenhuma rede Wi-Fi salva.' }
+    $conex = if ($wf.Cabo) { 'TV no cabo de rede' } else { 'TV no Wi-Fi' }
+    if ($wf.Bloqueiam.Count) {
+        New-Bloco 'Wi-Fi e Free My TV' "$conex · $($wf.Bloqueiam.Count) rede(s) impedem o Free My TV de virar a tela inicial" ($linhas + "`n`n" +
+            "O Free My TV precisa desligar a configuração inicial da TV, e o Android apaga as redes que ela salvou. Por isso ele se recusa a ativar. " +
+            "A correção salva essas redes de novo sem esse vínculo. Se a TV estiver numa delas, ela reconecta sozinha usando a senha que você informar.") @(
+            @{ Texto = 'Corrigir Wi-Fi'; Tag = 'fmt:wifi'; Estilo = 'BtnOk' }, @{ Texto = 'Verificar de novo'; Tag = 'fmt:wifiver' }) '#FFB020' $pnlFmtTopo
+    } else {
+        New-Bloco 'Wi-Fi e Free My TV' "$conex · nenhuma rede bloqueia o Free My TV" $linhas @(@{ Texto = 'Verificar de novo'; Tag = 'fmt:wifiver' }) '#3DDC84' $pnlFmtTopo
+    }
+}
+
+function Read-SenhaWifi([string]$ssid) {
+    $x = @'
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Senha do Wi-Fi" Width="460" SizeToContent="Height" ResizeMode="NoResize" WindowStartupLocation="CenterOwner"
+        Background="#0F131A" Foreground="#E6E9EF" FontFamily="Segoe UI" FontSize="13">
+  <Window.Resources>
+__ESTILOS__
+  </Window.Resources>
+  <StackPanel Margin="20">
+    <TextBlock x:Name="tTitulo" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap"/>
+    <TextBlock Foreground="#AEB6C6" TextWrapping="Wrap" Margin="0,8,0,12"
+               Text="A TV está conectada nesta rede. Ela vai esquecer a rede e se reconectar sozinha com esta senha (o processo roda na própria TV, então continua mesmo quando a conexão cair). A senha não é salva pelo TV Otimizador."/>
+    <PasswordBox x:Name="pSenha" Padding="6,5" Background="#1B2230" Foreground="#E6E9EF" BorderBrush="#2A3445" CaretBrush="#E6E9EF"/>
+    <TextBox x:Name="tSenha" Visibility="Collapsed"/>
+    <CheckBox x:Name="cMostrar" Content="Mostrar a senha" Margin="0,8,0,0"/>
+    <TextBlock Foreground="#FFB020" FontSize="12" TextWrapping="Wrap" Margin="0,12,0,0"
+               Text="Confira a senha: se estiver errada, a TV fica sem Wi-Fi e será preciso conectar pelo menu da própria TV."/>
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+      <Button x:Name="bCancelar" Content="Cancelar" Style="{StaticResource Btn}" IsCancel="True"/>
+      <Button x:Name="bOk" Content="Corrigir e reconectar" Style="{StaticResource BtnOk}" IsDefault="True"/>
+    </StackPanel>
+  </StackPanel>
+</Window>
+'@
+    $w = [Windows.Markup.XamlReader]::Load((New-Object System.Xml.XmlNodeReader ([xml]$x.Replace('__ESTILOS__', $script:EstilosXaml))))
+    $w.Owner = $win
+    if ($script:LogoIcon) { $w.Icon = $script:LogoIcon }
+    $w.FindName('tTitulo').Text = "Senha da rede `"$ssid`""
+    $script:_dlg = $w
+    $w.FindName('cMostrar').Add_Click({
+        $d = $script:_dlg; $p = $d.FindName('pSenha'); $t = $d.FindName('tSenha')
+        if ($d.FindName('cMostrar').IsChecked) { $t.Text = $p.Password; $t.Visibility = 'Visible'; $p.Visibility = 'Collapsed' }
+        else { $p.Password = $t.Text; $p.Visibility = 'Visible'; $t.Visibility = 'Collapsed' }
+    })
+    $w.FindName('bOk').Add_Click({ $script:_dlg.DialogResult = $true })
+    $w.FindName('pSenha').Focus() | Out-Null
+    if (-not $w.ShowDialog()) { return $null }
+    $senha = if ($w.FindName('cMostrar').IsChecked) { $w.FindName('tSenha').Text } else { $w.FindName('pSenha').Password }
+    return $senha
+}
+
+function ConvertTo-ShAspas([string]$t) { return "'" + ($t -replace "'", "'\''") + "'" }
+
+function Repair-Wifi {
+    if (-not @(Connect-Tv)[-1]) { Show-Msg 'TV sem conexão.'; return }
+    $script:WifiInfo = $null
+    $wf = Get-WifiInfo
+    if (-not $wf) { Show-Msg 'Não consegui ler as redes Wi-Fi da TV.' 'Wi-Fi' 'Warning'; return }
+    if (-not $wf.Bloqueiam.Count) { Show-Msg 'Nenhuma rede Wi-Fi bloqueia o Free My TV. Pode ativá-lo na TV.'; Update-FmtTab; return }
+    $atual = $wf.Bloqueiam | Where-Object { $_.Atual } | Select-Object -First 1
+    $outras = @($wf.Bloqueiam | Where-Object { -not $_.Atual })
+    $nomes = ($wf.Bloqueiam | ForEach-Object { $_.Ssid }) -join ', '
+
+    if (-not $atual) {
+        # a TV não está em nenhuma delas (cabo ou outra rede): dá para esquecer direto, sem cair
+        $r = [System.Windows.MessageBox]::Show($win, ("Esquecer as redes salvas pela configuração inicial: $nomes?`n`n" +
+            "A TV está $(if ($wf.Cabo) { 'no cabo' } else { 'em outra rede' }), então a conexão não cai. Se quiser essas redes de volta depois, adicione pelo menu da TV (assim elas não bloqueiam mais)."), 'Corrigir Wi-Fi', 'YesNo', 'Question')
+        if ($r -ne 'Yes') { return }
+        Set-Busy $true 'Corrigindo o Wi-Fi...'
+        try {
+            foreach ($n in $wf.Bloqueiam) { Log ("Wi-Fi: esquecer '$($n.Ssid)' (id $($n.Id)): " + (Invoke-Tv "cmd wifi forget-network $($n.Id)" 15).Trim()) }
+        } finally { Set-Busy $false }
+        $script:WifiInfo = $null; Update-FmtTab
+        if (-not (Get-WifiInfo).Bloqueiam.Count) { Show-Msg 'Pronto: nenhuma rede bloqueia mais o Free My TV. Na TV, abra o Free My TV > Início > Free My TV.' }
+        return
+    }
+
+    # a TV está numa rede que bloqueia: esquecer e reconectar EM SEGUNDO PLANO NA TV (a conexão ADB vai cair no meio)
+    if ($atual.Seg -notin @('open', 'owe', 'wpa2', 'wpa3')) {
+        Show-Msg "A rede '$($atual.Ssid)' usa segurança '$($atual.Seg)', que não dá para reconfigurar pelo ADB. Na TV, vá em Configurações > Rede e Internet, esqueça a rede e conecte de novo." 'Wi-Fi' 'Warning'
+        return
+    }
+    $senha = ''
+    if ($atual.Seg -in @('wpa2', 'wpa3')) {
+        $senha = Read-SenhaWifi $atual.Ssid
+        if ($senha -eq $null) { return }
+        if ($senha.Length -lt 8) { Show-Msg 'Senhas WPA têm pelo menos 8 caracteres. Confira e tente de novo.' 'Wi-Fi' 'Warning'; return }
+    }
+    $sh = New-Object System.Text.StringBuilder
+    [void]$sh.Append("#!/system/bin/sh`n")
+    [void]$sh.Append("rm -f /data/local/tmp/tvotm_wifi.sh`n")      # apaga o script (tem a senha) logo no início
+    [void]$sh.Append("sleep 2`n")
+    foreach ($n in $outras) { [void]$sh.Append("cmd wifi forget-network $($n.Id)`n") }
+    [void]$sh.Append("cmd wifi forget-network $($atual.Id)`n")
+    [void]$sh.Append("sleep 3`n")
+    $cmdCon = "cmd wifi connect-network $(ConvertTo-ShAspas $atual.Ssid) $($atual.Seg)"
+    if ($senha) { $cmdCon += ' ' + (ConvertTo-ShAspas $senha) }
+    [void]$sh.Append("$cmdCon`n")
+    $arq = Join-Path $env:TEMP ('tvotm_wifi_' + [guid]::NewGuid().ToString('N') + '.sh')
+    $ip = $txtIp.Text.Trim()
+    Set-Busy $true 'Corrigindo o Wi-Fi: a TV vai desconectar e reconectar sozinha...'
+    $voltou = $false
+    try {
+        [IO.File]::WriteAllText($arq, $sh.ToString(), (New-Object System.Text.UTF8Encoding $false))
+        $o = Invoke-Adb ('-s ' + $script:Alvo + ' push "' + $arq + '" /data/local/tmp/tvotm_wifi.sh') 30
+        if ($o -notmatch 'pushed|1 file') { throw "Não consegui enviar o script para a TV: $o" }
+        Invoke-Tv 'chmod 700 /data/local/tmp/tvotm_wifi.sh; nohup sh /data/local/tmp/tvotm_wifi.sh > /dev/null 2>&1 < /dev/null &' 15 | Out-Null
+        Log "Wi-Fi: a TV vai esquecer $nomes e reconectar em '$($atual.Ssid)'."
+        Remove-Item $arq -Force -ErrorAction SilentlyContinue
+        $sw = [Diagnostics.Stopwatch]::StartNew()
+        while ($sw.Elapsed.TotalSeconds -lt 12) { Set-Status ('Wi-Fi: a TV está reconectando... ({0:N0} s)' -f $sw.Elapsed.TotalSeconds); Wait-UI 500 }
+        Invoke-Adb "disconnect $($script:Alvo)" 5 | Out-Null
+        while ($sw.Elapsed.TotalSeconds -lt 120) {
+            Set-Status ('Wi-Fi: aguardando a TV voltar para a rede ({0:N0} s)...' -f $sw.Elapsed.TotalSeconds)
+            Invoke-Adb "connect $($script:Alvo)" 6 | Out-Null
+            if ((Invoke-Adb "-s $($script:Alvo) get-state" 5).Trim() -eq 'device') { $voltou = $true; break }
+            Wait-UI 3000
+        }
+    } catch {
+        Log "ERRO Wi-Fi: $($_.Exception.Message)"; Show-Msg $_.Exception.Message 'Wi-Fi' 'Error'
+    } finally {
+        if (Test-Path $arq) { Remove-Item $arq -Force -ErrorAction SilentlyContinue }
+        Set-Busy $false
+    }
+    $script:WifiInfo = $null
+    if ($voltou) {
+        $wf2 = Get-WifiInfo
+        Update-FmtTab
+        if ($wf2 -and -not $wf2.Bloqueiam.Count) {
+            Log 'Wi-Fi corrigido: nenhuma rede bloqueia o Free My TV.'
+            Show-Msg "Wi-Fi corrigido: a TV voltou para '$($atual.Ssid)' e nenhuma rede bloqueia mais o Free My TV.`n`nNa TV, abra o Free My TV > Início > Free My TV.$(if ($outras.Count) { "`n`nAs outras redes ($(($outras | ForEach-Object { $_.Ssid }) -join ', ')) foram esquecidas; adicione pelo menu da TV se precisar delas." } else { '' })"
+        } else {
+            Show-Msg 'A TV voltou, mas ainda há redes que bloqueiam o Free My TV. Clique em "Verificar de novo" e veja a lista.' 'Wi-Fi' 'Warning'
+        }
+    } else {
+        Show-Msg ("A TV não voltou para a rede em 2 minutos.`n`nPossíveis causas: senha errada ou a TV pegou outro IP. " +
+            "Na TV, vá em Configurações > Rede e Internet e conecte em '$($atual.Ssid)'. Redes conectadas pelo menu não bloqueiam o Free My TV.") 'Wi-Fi' 'Warning'
     }
 }
 

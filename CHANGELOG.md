@@ -2,6 +2,12 @@
 
 Versões seguem [SemVer](https://semver.org/lang/pt-BR/) (`MAJOR.MINOR.PATCH`). Cada compilação também tem um número de build `AAAAMMDD.N`, exibido na splash, no título e em Configurações > Sobre.
 
+## [1.4.3] - 2026-10-22
+- Free My TV: novo cartão **Wi-Fi e Free My TV**, que lista as redes salvas na TV, quem salvou cada uma e em qual a TV está conectada. O Free My TV se recusa a virar a tela inicial quando alguma rede foi salva pela configuração inicial da TV (desligá-la apagaria o Wi-Fi).
+- Botão **Corrigir Wi-Fi**: se a TV está no cabo ou em outra rede, esquece as redes que bloqueiam sem derrubar a conexão; se está numa delas, pede a senha e roda na própria TV, em segundo plano, um script que esquece e reconecta a rede (a senha não é salva, e o script se apaga). Depois aguarda a TV voltar e confere de novo.
+- Ao instalar o Free My TV, o app avisa se o Wi-Fi vai bloquear a ativação.
+- TCL: as duas variantes do `appops` (AUTO_START e APP_AUTO_START) rodam separadas, e o Log mostra qual existe na TV; o "Unknown operation" de uma delas não é mais confundido com falha.
+
 ## [1.4.2] - 2026-10-22
 - Android SDK instalado sem o sdkmanager (descontinuado pela Google e que falhava ao descompactar em alguns drives): o build-tools 34 e o Android 34 são baixados direto do repositório oficial e extraídos com o tar do Windows, numa pasta temporária no mesmo drive do destino.
 
