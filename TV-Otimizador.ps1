@@ -13,8 +13,8 @@
 
 # ---------------------------------------------------------------- versão (atualizada por tools/bump-version.ps1)
 $script:AppNome    = 'TV Otimizador'
-$script:AppVersion = '1.4.1'
-$script:AppBuild   = '20261022.8'
+$script:AppVersion = '1.4.2'
+$script:AppBuild   = '20261022.9'
 $script:AppAutor   = 'Alexandre Jeronimo Correa'
 $script:AppEmail   = 'ajcorrea@gmail.com'
 $script:AppGitHub  = 'https://github.com/ajcorrea'
@@ -1907,43 +1907,57 @@ function Install-BuildTools {
             $script:Cfg.jdkHome = $jd.FullName; $script:JdkHome = $jd.FullName; Save-Config
             Log "JDK instalado em $($jd.FullName)"
         }
-        # 2) Android SDK (command-line tools + build-tools 34 + platform 34)
+        # 2) Android SDK: build-tools 34 + platform android-34, baixados direto do repositório oficial da Google
+        #    (sem o sdkmanager, que foi descontinuado e falha ao descompactar em alguns drives)
         if (-not $script:SdkRoot) {
             $sdk = Join-Path $base 'android-sdk'
-            $sdkm = Join-Path $sdk 'cmdline-tools\latest\bin\sdkmanager.bat'
-            if (-not (Test-Path $sdkm)) {
-                $arq = 'commandlinetools-win-13114758_latest.zip'
-                try {
-                    $xml = [xml](New-Object System.Net.WebClient).DownloadString('https://dl.google.com/android/repository/repository2-3.xml')
-                    $rp = $xml.SelectSingleNode("//*[local-name()='remotePackage'][@path='cmdline-tools;latest']")
-                    foreach ($a in $rp.SelectNodes(".//*[local-name()='archive']")) {
-                        $os = $a.SelectSingleNode("./*[local-name()='host-os']")
-                        $u = $a.SelectSingleNode(".//*[local-name()='url']")
-                        if ($os -and $os.InnerText -eq 'windows' -and $u) { $arq = $u.InnerText; break }
+            New-Item -ItemType Directory -Path $sdk -Force | Out-Null
+            $urlBt = 'https://dl.google.com/android/repository/build-tools_r34-windows.zip'
+            $urlPl = 'https://dl.google.com/android/repository/platform-34-ext7_r03.zip'
+            $tamBt = 0; $tamPl = 0
+            try {
+                Set-Status 'Consultando o repositório do Android SDK...'
+                $wc = New-Object System.Net.WebClient; $wc.Headers.Add('User-Agent', 'TV-Otimizador')
+                $xml = [xml]$wc.DownloadString('https://dl.google.com/android/repository/repository2-3.xml')
+                foreach ($par in @(@('build-tools;34.0.0', 'bt'), @('platforms;android-34', 'pl'))) {
+                    $rp = $xml.SelectSingleNode("//*[local-name()='remotePackage'][@path='$($par[0])']")
+                    if (-not $rp) { continue }
+                    foreach ($ar in $rp.SelectNodes(".//*[local-name()='archive']")) {
+                        $os = $ar.SelectSingleNode("./*[local-name()='host-os']")
+                        $u = $ar.SelectSingleNode(".//*[local-name()='url']")
+                        $t = $ar.SelectSingleNode(".//*[local-name()='size']")
+                        if ($u -and (-not $os -or $os.InnerText -eq 'windows')) {
+                            if ($par[1] -eq 'bt') { $urlBt = 'https://dl.google.com/android/repository/' + $u.InnerText; if ($t) { $tamBt = [double]$t.InnerText } }
+                            else { $urlPl = 'https://dl.google.com/android/repository/' + $u.InnerText; if ($t) { $tamPl = [double]$t.InnerText } }
+                            break
+                        }
                     }
-                } catch {}
-                $z = Join-Path $tmp $arq
-                Save-Download "https://dl.google.com/android/repository/$arq" $z 0 'Android command-line tools'
-                $tmpX = Join-Path $tmp 'cmdline'; Remove-Item $tmpX -Recurse -Force -ErrorAction SilentlyContinue
-                Expand-Zip $z $tmpX 'Android command-line tools'
-                New-Item -ItemType Directory -Path (Join-Path $sdk 'cmdline-tools') -Force | Out-Null
-                Remove-Item (Join-Path $sdk 'cmdline-tools\latest') -Recurse -Force -ErrorAction SilentlyContinue
-                Move-Item (Join-Path $tmpX 'cmdline-tools') (Join-Path $sdk 'cmdline-tools\latest')
-                Remove-Item $z, $tmpX -Recurse -Force -ErrorAction SilentlyContinue
+                }
+            } catch { Log "Repositório do SDK indisponível, usando os endereços conhecidos: $($_.Exception.Message)" }
+            # pasta temporária no MESMO drive do SDK: o Move-Item não move pastas entre drives
+            $stage = Join-Path $sdk '.tvotm_tmp'
+            foreach ($item in @(
+                    @{ Url = $urlBt; Tam = $tamBt; Nome = 'Android build-tools 34'; Destino = (Join-Path $sdk 'build-tools\34.0.0'); Marca = 'aapt2.exe' }
+                    @{ Url = $urlPl; Tam = $tamPl; Nome = 'Android 34 (platform)'; Destino = (Join-Path $sdk 'platforms\android-34'); Marca = 'android.jar' })) {
+                if (Test-Path (Join-Path $item.Destino $item.Marca)) { continue }
+                $z = Join-Path $tmp ([IO.Path]::GetFileName($item.Url))
+                Save-Download $item.Url $z $item.Tam $item.Nome
+                Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
+                Expand-Zip $z $stage $item.Nome
+                Remove-Item $z -Force -ErrorAction SilentlyContinue
+                # o zip traz uma pasta (ex.: android-14 ou android-34): ela vira o destino
+                $topo = Get-ChildItem -Path $stage -Directory | Where-Object { Test-Path (Join-Path $_.FullName $item.Marca) } | Select-Object -First 1
+                if (-not $topo -and (Test-Path (Join-Path $stage $item.Marca))) { $topo = Get-Item $stage }
+                if (-not $topo) { throw "Descompactei o $($item.Nome), mas não encontrei o $($item.Marca)." }
+                New-Item -ItemType Directory -Path (Split-Path $item.Destino) -Force | Out-Null
+                Remove-Item $item.Destino -Recurse -Force -ErrorAction SilentlyContinue
+                Move-Item -LiteralPath $topo.FullName -Destination $item.Destino
+                Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
+                Log "$($item.Nome) instalado em $($item.Destino)"
             }
-            $amb = @{ JAVA_HOME = $script:JdkHome }
-            $binSdk = Split-Path $sdkm
-            # licenças padrão do Android SDK (as mesmas que o "--licenses" grava ao aceitar)
-            $dl = Join-Path $sdk 'licenses'; New-Item -ItemType Directory -Path $dl -Force | Out-Null
-            $lic = "`n24333f8a63b6825ea9c5514f83c2829b004d1fee`n8933bad161af4178b1185d1a37fbf41ea5269c55`nd56f5187479451eabf01fb78af6dfcb131a6481e"
-            if (-not (Test-Path (Join-Path $dl 'android-sdk-license'))) { [IO.File]::WriteAllText((Join-Path $dl 'android-sdk-license'), $lic) }
-            $sim = Join-Path $tmp 'sim.txt'
-            [IO.File]::WriteAllText($sim, (('y' + [Environment]::NewLine) * 60))
-            $r = Invoke-Longo ('"' + $sdkm + '" --sdk_root="' + $sdk + '" --licenses < "' + $sim + '"') $amb $binSdk 'Aceitando as licenças do Android SDK' 10
-            $r = Invoke-Longo ('"' + $sdkm + '" --sdk_root="' + $sdk + '" "build-tools;34.0.0" "platforms;android-34" < "' + $sim + '"') $amb $binSdk 'Baixando build-tools 34 e Android 34 (sdkmanager)' 40
-            if (-not (Test-Sdk $sdk)) { throw "O sdkmanager não instalou o build-tools/platform 34 (código $($r.Codigo)). Últimas linhas:`n$(($r.Saida -split "\r?\n" | Where-Object { $_.Trim() } | Select-Object -Last 12) -join "`n")`n`nA saída completa está na aba Log." }
+            if (-not (Test-Sdk $sdk)) { throw "O Android SDK ficou incompleto em $sdk (faltam build-tools ou platform 34)." }
             $script:Cfg.sdkRoot = $sdk; $script:SdkRoot = $sdk; Save-Config
-            Log "Android SDK instalado em $sdk"
+            Log "Android SDK pronto em $sdk"
         }
         # 3) Git Bash (PortableGit), se não houver Git for Windows
         if (-not $script:BashExe) {

@@ -2,6 +2,9 @@
 
 Versões seguem [SemVer](https://semver.org/lang/pt-BR/) (`MAJOR.MINOR.PATCH`). Cada compilação também tem um número de build `AAAAMMDD.N`, exibido na splash, no título e em Configurações > Sobre.
 
+## [1.4.2] - 2026-10-22
+- Android SDK instalado sem o sdkmanager (descontinuado pela Google e que falhava ao descompactar em alguns drives): o build-tools 34 e o Android 34 são baixados direto do repositório oficial e extraídos com o tar do Windows, numa pasta temporária no mesmo drive do destino.
+
 ## [1.4.1] - 2026-10-22
 - Correção: falha "O nome do diretório é inválido" ao instalar o Android SDK (sdkmanager agora roda com pasta de trabalho válida e sem pipe do cmd; licenças gravadas antes). Mensagens do cmd sem acentos quebrados e saída completa de cada etapa na aba Log.
 
