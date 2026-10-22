@@ -1,6 +1,9 @@
-# Changelog
+﻿# Changelog
 
 Versões seguem [SemVer](https://semver.org/lang/pt-BR/) (`MAJOR.MINOR.PATCH`). Cada compilação também tem um número de build `AAAAMMDD.N`, exibido na splash, no título e em Configurações > Sobre.
+
+## [1.3.1] - 2026-10-22
+- Botão **Reiniciar TV** no cabeçalho e na janela Tela da TV: reinicia a TV, aguarda o boot e reconecta sozinho.
 
 ## [1.3.0] - 2026-10-22
 - Splash screen, logo vetorial e ícone do app.

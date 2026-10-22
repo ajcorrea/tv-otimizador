@@ -13,8 +13,8 @@
 
 # ---------------------------------------------------------------- versão (atualizada por tools/bump-version.ps1)
 $script:AppNome    = 'TV Otimizador'
-$script:AppVersion = '1.3.0'
-$script:AppBuild   = '20261022.5'
+$script:AppVersion = '1.3.1'
+$script:AppBuild   = '20261022.6'
 $script:AppAutor   = 'Alexandre Jeronimo Correa'
 $script:AppEmail   = 'ajcorrea@gmail.com'
 $script:AppGitHub  = 'https://github.com/ajcorrea'
@@ -404,7 +404,8 @@ __ESTILOS__
         <TextBox x:Name="txtIp" Width="130" VerticalContentAlignment="Center"/>
         <TextBlock Text="Porta" VerticalAlignment="Center" Foreground="#8A93A6" Margin="12,0,6,0"/>
         <TextBox x:Name="txtPorta" Width="60" Text="5555" VerticalContentAlignment="Center"/>
-        <Button x:Name="btnTela" Style="{StaticResource Btn}" Content="Ver tela da TV" Margin="12,0,0,0"/>
+        <Button x:Name="btnReiniciar" Style="{StaticResource BtnWarn}" Content="Reiniciar TV" Margin="12,0,0,0" ToolTip="Reinicia a TV e reconecta automaticamente"/>
+        <Button x:Name="btnTela" Style="{StaticResource Btn}" Content="Ver tela da TV"/>
         <Button x:Name="btnAnalisar" Style="{StaticResource BtnPrim}" Content="Conectar e analisar"/>
       </StackPanel>
       <StackPanel Orientation="Horizontal">
@@ -680,6 +681,7 @@ __ESTILOS__
         <Button Style="{StaticResource BtnRc}" Content="Config." Tag="cmd:settings"/>
         <Button Style="{StaticResource BtnRc}" Content="Apps" Tag="cmd:apps"/>
       </UniformGrid>
+      <Button Style="{StaticResource BtnWarn}" Content="Reiniciar TV" Tag="cmd:reboot" Margin="3,8,3,0" Focusable="False"/>
 
       <TextBlock Text="Digitar na TV" FontWeight="SemiBold" Margin="0,18,0,6"/>
       <DockPanel>
@@ -698,7 +700,7 @@ __ESTILOS__
 
 Set-Splash 'Montando a interface...'
 $win = [Windows.Markup.XamlReader]::Load((New-Object System.Xml.XmlNodeReader $xaml))
-foreach ($n in 'tabs','tabLauncher','tabConfig','pnlLauncher','pnlConfig','logoHeader','txtVersao','btnTela',
+foreach ($n in 'tabs','tabLauncher','tabConfig','pnlLauncher','pnlConfig','logoHeader','txtVersao','btnTela','btnReiniciar',
                'txtIp','txtPorta','btnAnalisar','txtDevice','txtStatus','pb','ringScore','txtScore','txtScoreLabel','pnlCards',
                'btnSugeridos','btnEstadoAtual','chkTodos','dgItens','dgProc','txtDiag','txtLog','btnExportar','btnReverter','btnAplicar','txtMudancas') {
     Set-Variable -Name $n -Value $win.FindName($n) -Scope Script
@@ -720,7 +722,7 @@ function Log([string]$msg) {
 function Set-Status([string]$msg) { $txtStatus.Text = $msg; DoEvents }
 function Set-Busy([bool]$busy, [string]$msg = $null) {
     $pb.IsIndeterminate = $busy
-    foreach ($b in $btnAnalisar, $btnAplicar, $btnReverter, $btnSugeridos, $btnEstadoAtual, $btnExportar, $btnTela) { $b.IsEnabled = -not $busy }
+    foreach ($b in $btnAnalisar, $btnAplicar, $btnReverter, $btnSugeridos, $btnEstadoAtual, $btnExportar, $btnTela, $btnReiniciar) { $b.IsEnabled = -not $busy }
     $pnlConfig.IsEnabled = -not $busy
     if ($msg) { Set-Status $msg }
 }
@@ -1370,6 +1372,7 @@ function Send-Tecla([string]$codigo) {
     Update-Tela
 }
 function Send-Comando([string]$cmd) {
+    if ($cmd -eq 'reboot') { Restart-Tv; return }
     if (-not $script:Alvo) { if (-not @(Connect-Tv)[-1]) { return } }
     switch ($cmd) {
         'settings' { Invoke-Tv 'am start -a android.settings.SETTINGS' | Out-Null }
@@ -1377,6 +1380,50 @@ function Send-Comando([string]$cmd) {
     }
     Wait-UI 800
     Update-Tela
+}
+function Restart-Tv {
+    if (-not $script:AdbExe) { $tabs.SelectedItem = $tabConfig; Show-Msg 'Instale o ADB na aba Configurações primeiro.'; return }
+    if (-not $txtIp.Text.Trim()) { Show-Msg 'Informe o IP da TV.'; return }
+    $dono = if ($script:TelaWin -and $script:TelaWin.IsActive) { $script:TelaWin } else { $win }
+    $r = [System.Windows.MessageBox]::Show($dono, "Reiniciar a TV agora?`n`nEla volta em cerca de 1 minuto e o app reconecta sozinho.", 'Reiniciar TV', 'YesNo', 'Question')
+    if ($r -ne 'Yes') { return }
+    $telaAuto = $script:TimerTela.IsEnabled
+    $script:TimerTela.Stop()
+    $volta = $false
+    Set-Busy $true 'Enviando o comando de reinício...'
+    try {
+        if (-not @(Connect-Tv)[-1]) { throw 'A TV não respondeu. Verifique se ela está ligada e na rede.' }
+        Invoke-Adb "-s $($script:Alvo) reboot" 15 | Out-Null
+        Log 'Comando de reinício enviado à TV.'
+        if ($script:TelaWin) { $txtTelaInfo.Text = 'TV reiniciando...'; $imgTela.Source = $null; $txtTelaVazia.Text = 'TV reiniciando...'; $txtTelaVazia.Visibility = 'Visible' }
+        $sw = [Diagnostics.Stopwatch]::StartNew()
+        while ($sw.Elapsed.TotalSeconds -lt 10) { Set-Status ('TV reiniciando... ({0:N0} s)' -f $sw.Elapsed.TotalSeconds); Wait-UI 500 }
+        Invoke-Adb "disconnect $($script:Alvo)" 5 | Out-Null
+        while ($sw.Elapsed.TotalSeconds -lt 180) {
+            Set-Status ('TV reiniciando... aguardando ela voltar ({0:N0} s)' -f $sw.Elapsed.TotalSeconds)
+            Invoke-Adb "connect $($script:Alvo)" 6 | Out-Null
+            if ((Invoke-Adb "-s $($script:Alvo) get-state" 5).Trim() -eq 'device') {
+                if ((Invoke-Tv 'getprop sys.boot_completed' 5).Trim() -eq '1') { $volta = $true; break }
+            }
+            Wait-UI 3000
+        }
+        if ($volta) {
+            Set-Status ('TV reiniciada e conectada em {0:N0} s.' -f $sw.Elapsed.TotalSeconds)
+            Log ('TV voltou após {0:N0} s.' -f $sw.Elapsed.TotalSeconds)
+        } else {
+            Set-Status 'A TV ainda não respondeu. Quando ela ligar, clique em "Conectar e analisar".'
+            Log 'A TV não respondeu em 3 minutos após o reinício.'
+        }
+    } catch {
+        Log "ERRO: $($_.Exception.Message)"; Show-Msg $_.Exception.Message 'Erro' 'Error'
+    } finally {
+        Set-Busy $false
+    }
+    if ($script:TelaWin) {
+        $txtTelaVazia.Text = 'Capturando a tela da TV...'
+        if ($volta) { Update-Tela }
+        if ($telaAuto) { $script:TimerTela.Start() }
+    }
 }
 function Send-Texto {
     $t = $txtEnviar.Text
@@ -1760,6 +1807,7 @@ $pnlConfig.AddHandler([System.Windows.Controls.Primitives.ButtonBase]::ClickEven
     if ($b -is [System.Windows.Controls.Button]) { $e.Handled = $true; Invoke-ConfigAcao ([string]$b.Tag) }
 })
 $btnTela.Add_Click({ Open-TelaWindow })
+$btnReiniciar.Add_Click({ Restart-Tv })
 $win.Add_Closing({
     $script:TimerTela.Stop()
     if ($script:TelaWin) { $script:TelaWin.Close() }
