@@ -1,4 +1,4 @@
-﻿# Changelog
+# Changelog
 
 Versões seguem [SemVer](https://semver.org/lang/pt-BR/) (`MAJOR.MINOR.PATCH`). Cada compilação também tem um número de build `AAAAMMDD.N`, exibido na splash, no título e em Configurações > Sobre.
 
@@ -12,7 +12,7 @@ Versões seguem [SemVer](https://semver.org/lang/pt-BR/) (`MAJOR.MINOR.PATCH`). 
 - **Tela da TV** agora abre em uma janela separada e redimensionável, com controle remoto e atualização automática.
 - Correção: textos pretos (ilegíveis) na aba Tela inicial.
 - Créditos, versão e build no cabeçalho e em Configurações > Sobre.
-- Versionamento (`VERSION`, `tools/bump-version.ps1`) e CI com validação de sintaxe/XAML e Release automática por tag.
+- Versionamento (`VERSION`, `tools/bump-version.ps1`) e CI com validação de sintaxe/XAML e Release automática quando a versão muda.
 
 ## [1.2.0] - 2026-10-22
 - Aba **Tela inicial**: troca do launcher do Google por Projectivy, FLauncher ou ATV Launcher (com instalação pela Play Store da TV) e volta ao launcher do Google.

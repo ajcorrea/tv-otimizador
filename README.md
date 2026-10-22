@@ -56,7 +56,7 @@ Quer adicionar descrições para apps de outras marcas com Android TV (Philips, 
 
 - Versão em [SemVer](https://semver.org/lang/pt-BR/) no arquivo `VERSION` e no script; build `AAAAMMDD.N` a cada compilação.
 - `tools\bump-version.ps1 -Parte patch|minor|major -Nota "..."` atualiza versão, build e `CHANGELOG.md`.
-- Ao enviar uma tag `v*`, o GitHub Actions valida o script (sintaxe e todos os XAML) e publica a Release com o `.zip`.
+- A cada push na `main`, o GitHub Actions valida o script (sintaxe e todos os XAML no Windows). Se a versão do `VERSION` ainda não foi publicada, ele cria a tag `v<versão>` e a Release com o `.zip` e as notas do CHANGELOG.
 
 ## Aviso
 

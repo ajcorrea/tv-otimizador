@@ -10,8 +10,8 @@
     .\tools\bump-version.ps1 -Parte minor -Nota "Nova aba de rede"
     .\tools\bump-version.ps1 -Parte major
 
-  Depois de um bump de versão:  git commit -am "v1.4.0" ; git tag v1.4.0 ; git push --follow-tags
-  (a tag v* dispara o workflow que gera o .zip e a Release no GitHub)
+  Depois de um bump de versão:  git commit -am "v1.4.0" ; git push
+  (o CI cria a tag v1.4.0 e a Release com o .zip quando a versão ainda não foi publicada)
 #>
 param(
     [ValidateSet('build', 'patch', 'minor', 'major')]
@@ -54,4 +54,4 @@ if ($nova -ne $v) {
 }
 
 Write-Host "Versão: $v -> $nova   Build: $build" -ForegroundColor Green
-if ($nova -ne $v) { Write-Host "Próximo passo: git commit -am `"v$nova`"; git tag v$nova; git push --follow-tags" }
+if ($nova -ne $v) { Write-Host "Próximo passo: git commit -am `"v$nova`"; git push   (o CI publica a Release v$nova)" }
