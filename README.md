@@ -28,6 +28,7 @@
 - **Tudo é reversível**: os apps são só *desativados* (`pm disable-user`), nunca desinstalados. Itens já aplicados aparecem em cinza com botão **Restaurar**, e há o **Reverter tudo**.
 - **Tela inicial**: troca o launcher pesado do Google pelo Projectivy, FLauncher ou ATV Launcher (instala pela Play Store da TV) e volta quando quiser.
 - **Tela da TV**: veja a tela da TV numa janela no PC e controle com setas, OK, Voltar, Home e volume (botões ou teclado). Ou abra o **scrcpy** para tela ao vivo com mouse e teclado.
+- **Free My TV**: instala a tela inicial leve e sem anúncios do [Free My TV](https://freemytv.io/pt/). Em Android TV / Google TV, o app baixa o código, compila com as suas opções (cidade, chave TMDB, país, idioma...) e instala pelo ADB. Em TVs **LG**, instala o [FreeMyTvWebOS](https://github.com/danielthejoker18/FreeMyTvWebOS) pelo Developer Mode da LG. Para **Samsung**, indica o TizenBrew Installer.
 - **Instala as próprias dependências**: a aba **Configurações** baixa o ADB (Google) e o scrcpy (GitHub) para a pasta que você escolher.
 - Aba de **processos**, **diagnóstico completo** em texto e **exportação de relatório**.
 
@@ -50,11 +51,21 @@
 
 > Se o Windows bloquear o script, clique com o botão direito no `TV-Otimizador.ps1` > *Propriedades* > marque **Desbloquear**.
 
+## Free My TV
+
+O [Free My TV](https://freemytv.io/pt/) é um projeto de código aberto (MIT) que troca a tela inicial da fábrica por uma tela leve e sem anúncios. O TV Otimizador só automatiza a instalação, usando o código e as instruções oficiais dos projetos:
+
+- **Android TV / Google TV** ([simbasjungles/free-my-tv](https://github.com/simbasjungles/free-my-tv)): o projeto não distribui APK pronto, porque cada instalação é compilada com as suas opções. Na aba **Free My TV**, preencha as opções (a chave [TMDB](https://www.themoviedb.org/settings/api) é grátis e opcional) e clique em **Compilar e instalar na TV**. Na primeira vez, o app oferece baixar as ferramentas de compilação (JDK 17, Android SDK e Git Bash, cerca de 500 MB). Depois, na TV, abra o Free My TV > Tela inicial > Free My TV e aceite o aviso de depuração. Para voltar: Tela inicial > Original.
+- **LG webOS** ([danielthejoker18/FreeMyTvWebOS](https://github.com/danielthejoker18/FreeMyTvWebOS)): na TV, instale o app Developer Mode, ligue *Dev Mode Status* e *Key Server*, e informe o IP e a Passphrase na aba. Usa o Cliente OpenSSH que já vem no Windows. O Developer Mode da LG expira em cerca de 40 dias; use *EXTEND* no app da TV.
+- **Samsung Tizen**: use o [TizenBrew Installer](https://github.com/reisxd/TizenBrewInstaller/releases/latest) e instale `simbasjungles/free-my-tv`.
+
 ## Onde ficam os dados
 
 `%APPDATA%\TV-Otimizador\`
 - `config.json`: IP/porta da TV e caminhos do ADB e do scrcpy.
 - `historico.json`: o que o app alterou na TV (usado pelo **Reverter tudo**).
+- `freemytv\`: a chave de assinatura do Free My TV (necessária para atualizar o app) e o último APK compilado.
+- `lg\`: a chave de acesso da TV LG (Developer Mode).
 
 ## Compatibilidade
 
@@ -77,6 +88,14 @@ Use por sua conta e risco. O app só usa comandos reversíveis do Android, mas d
 **Alexandre Jeronimo Correa**
 - E-mail: [ajcorrea@gmail.com](mailto:ajcorrea@gmail.com)
 - GitHub: [github.com/ajcorrea](https://github.com/ajcorrea)
+
+## Créditos
+
+- [Free My TV](https://github.com/simbasjungles/free-my-tv), de simbasjungles (MIT)
+- [FreeMyTvWebOS](https://github.com/danielthejoker18/FreeMyTvWebOS), de danielthejoker18 (MIT)
+- [scrcpy](https://github.com/Genymobile/scrcpy), da Genymobile (Apache 2.0)
+
+O TV Otimizador não é afiliado a esses projetos nem a Google, TCL, LG ou Samsung.
 
 ## Licença
 

@@ -2,6 +2,15 @@
 
 Versões seguem [SemVer](https://semver.org/lang/pt-BR/) (`MAJOR.MINOR.PATCH`). Cada compilação também tem um número de build `AAAAMMDD.N`, exibido na splash, no título e em Configurações > Sobre.
 
+## [1.4.0] - 2026-10-22
+- Nova aba **Free My TV** para instalar a tela inicial leve e sem anúncios do projeto [Free My TV](https://freemytv.io/pt/) (simbasjungles):
+  - **Android TV / Google TV:** baixa o código mais recente, compila com as suas opções (chave TMDB, cidade com busca automática de coordenadas, país, idioma, temperatura, moeda, serviços a esconder, Assistente, animações) usando o próprio `build.sh` do projeto, instala pelo ADB, libera a execução em segundo plano nas TVs TCL e abre o app. Botões para abrir e desinstalar (com o passo de voltar ao modo *Original*).
+  - **Ferramentas de compilação** (JDK 17, Android SDK com build-tools/platform 34 e Git Bash) baixadas e instaladas pelo app, das fontes oficiais, na pasta escolhida; Git for Windows e SDKs já instalados são reaproveitados. A chave de assinatura fica em `%APPDATA%\TV-Otimizador\freemytv` para as atualizações.
+  - **TV LG (webOS):** instala e remove o [FreeMyTvWebOS](https://github.com/danielthejoker18/FreeMyTvWebOS) pelo Developer Mode da LG, usando o OpenSSH do Windows (sem Python e sem root).
+  - **Samsung (Tizen):** instruções e link para o TizenBrew Installer.
+- A aba Tela inicial reconhece o Free My TV e indica que ele gerencia a própria tela inicial; ao instalar, o launcher do Google é reativado se o TV Otimizador o tiver desativado.
+- Configurações mostra as ferramentas de compilação e o Cliente OpenSSH do Windows.
+
 ## [1.3.1] - 2026-10-22
 - Botão **Reiniciar TV** no cabeçalho e na janela Tela da TV: reinicia a TV, aguarda o boot e reconecta sozinho.
 

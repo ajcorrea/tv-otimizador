@@ -13,8 +13,8 @@
 
 # ---------------------------------------------------------------- versão (atualizada por tools/bump-version.ps1)
 $script:AppNome    = 'TV Otimizador'
-$script:AppVersion = '1.3.1'
-$script:AppBuild   = '20261022.6'
+$script:AppVersion = '1.4.0'
+$script:AppBuild   = '20261022.7'
 $script:AppAutor   = 'Alexandre Jeronimo Correa'
 $script:AppEmail   = 'ajcorrea@gmail.com'
 $script:AppGitHub  = 'https://github.com/ajcorrea'
@@ -242,6 +242,7 @@ $script:Catalogo = @(
   @{P='com.android.providers.tv'; X=$true; N='Provedor de canais'}
   @{P='com.android.bluetooth'; X=$true; N='Bluetooth'}
   @{P='android';            X=$true; N='Framework Android'}
+  @{P='io.freemytv';        X=$true; N='Free My TV (tela inicial)'}
 )
 $script:CatOrdem = @{ 'Ajustes do sistema'=0; 'Tela inicial (launcher)'=1; 'TCL'=2; 'Google'=3; 'Sistema Android'=4; 'Apps de streaming'=5; 'Apps instalados'=6; 'Protegidos (não mexer)'=7; 'Outros pacotes do sistema'=8 }
 
@@ -254,6 +255,7 @@ $script:LaunchersAlt = [ordered]@{
     'ca.dstudio.atvlauncher.free' = 'ATV Launcher'
     'ca.dstudio.atvlauncher.pro'  = 'ATV Launcher Pro'
     'com.wolf.firelauncher'       = 'Wolf Launcher'
+    'io.freemytv'                 = 'Free My TV'
 }
 # os que aparecem na aba mesmo sem estarem instalados (com botão de instalar pela Play Store)
 $script:LaunchersSugeridos = @(
@@ -365,6 +367,30 @@ $script:EstilosXaml = @'
       <Setter Property="CanUserAddRows" Value="False"/>
       <Setter Property="CanUserDeleteRows" Value="False"/>
       <Setter Property="SelectionMode" Value="Single"/>
+    </Style>
+    <Style x:Key="Card" TargetType="Border">
+      <Setter Property="Background" Value="#161C26"/>
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="Padding" Value="16,12"/>
+      <Setter Property="Margin" Value="0,0,0,10"/>
+    </Style>
+    <Style x:Key="Titulo" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="14"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Foreground" Value="#F2F4F8"/>
+      <Setter Property="Margin" Value="2,10,0,8"/>
+    </Style>
+    <Style x:Key="Rotulo" TargetType="TextBlock">
+      <Setter Property="Foreground" Value="#AEB6C6"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="Margin" Value="0,5,14,5"/>
+    </Style>
+    <Style x:Key="Dica" TargetType="TextBlock">
+      <Setter Property="Foreground" Value="#7F8AA0"/>
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="TextWrapping" Value="Wrap"/>
+      <Setter Property="Margin" Value="10,5,0,5"/>
     </Style>
     <Style x:Key="Mono" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
       <Setter Property="FontFamily" Value="Consolas"/>
@@ -611,6 +637,87 @@ __ESTILOS__
       <TabItem Header="Log">
         <TextBox x:Name="txtLog" Style="{StaticResource Mono}"/>
       </TabItem>
+      <TabItem x:Name="tabFmt" Header="Free My TV">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Margin="0,4,8,8">
+            <StackPanel x:Name="pnlFmtTopo"/>
+
+            <TextBlock Text="Configurações do Free My TV (Android TV / Google TV)" Style="{StaticResource Titulo}"/>
+            <Border Style="{StaticResource Card}">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto"/>
+                  <ColumnDefinition Width="320"/>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                  <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
+                  <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="Chave TMDB (opcional)" Style="{StaticResource Rotulo}"/>
+                <TextBox Grid.Row="0" Grid.Column="1" x:Name="txtFmtTmdb" Margin="0,4"/>
+                <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal">
+                  <TextBlock Text="Sem ela, a tela funciona, mas sem as sugestões de filmes e séries." Style="{StaticResource Dica}"/>
+                  <Button Content="Obter grátis" Tag="url:https://www.themoviedb.org/settings/api" Style="{StaticResource BtnMini}" Background="#2A3445" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock Grid.Row="1" Text="Cidade (clima e pôr do sol)" Style="{StaticResource Rotulo}"/>
+                <DockPanel Grid.Row="1" Grid.Column="1" Margin="0,4">
+                  <Button x:Name="btnFmtCidade" DockPanel.Dock="Right" Content="Buscar" Tag="fmt:cidade" Style="{StaticResource BtnMini}" Margin="8,0,0,0"/>
+                  <TextBox x:Name="txtFmtCidade"/>
+                </DockPanel>
+                <TextBlock Grid.Row="1" Grid.Column="2" x:Name="txtFmtCoord" Style="{StaticResource Dica}"/>
+                <TextBlock Grid.Row="2" Text="País (2 letras)" Style="{StaticResource Rotulo}"/>
+                <TextBox Grid.Row="2" Grid.Column="1" x:Name="txtFmtRegiao" Margin="0,4" Width="80" HorizontalAlignment="Left"/>
+                <TextBlock Grid.Row="2" Grid.Column="2" Text="Define em qual app cada título aparece (BR, US, PT...)." Style="{StaticResource Dica}"/>
+                <TextBlock Grid.Row="3" Text="Idioma" Style="{StaticResource Rotulo}"/>
+                <TextBox Grid.Row="3" Grid.Column="1" x:Name="txtFmtIdioma" Margin="0,4" Width="80" HorizontalAlignment="Left"/>
+                <TextBlock Grid.Row="3" Grid.Column="2" Text="auto (segue a TV), pt, en, es, de, fr..." Style="{StaticResource Dica}"/>
+                <TextBlock Grid.Row="4" Text="Temperatura" Style="{StaticResource Rotulo}"/>
+                <TextBox Grid.Row="4" Grid.Column="1" x:Name="txtFmtTemp" Margin="0,4" Width="80" HorizontalAlignment="Left"/>
+                <TextBlock Grid.Row="4" Grid.Column="2" Text="auto, C ou F" Style="{StaticResource Dica}"/>
+                <TextBlock Grid.Row="5" Text="Esconder serviços" Style="{StaticResource Rotulo}"/>
+                <TextBox Grid.Row="5" Grid.Column="1" x:Name="txtFmtEsconder" Margin="0,4"/>
+                <TextBlock Grid.Row="5" Grid.Column="2" Text="Serviços que você não assina, separados por vírgula: netflix, prime, disney, globoplay, max..." Style="{StaticResource Dica}"/>
+                <TextBlock Grid.Row="6" Text="Moeda das cotações" Style="{StaticResource Rotulo}"/>
+                <TextBox Grid.Row="6" Grid.Column="1" x:Name="txtFmtMoeda" Margin="0,4" Width="80" HorizontalAlignment="Left"/>
+                <CheckBox Grid.Row="6" Grid.Column="2" x:Name="chkFmtCripto" Content="Mostrar cotações de criptomoedas" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                <CheckBox Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2" x:Name="chkFmtAssist" Content="Desativar também o Google Assistente (o botão de microfone do controle para de funcionar)" Margin="0,6,0,2"/>
+                <CheckBox Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2" x:Name="chkFmtAnim" Content="Esconder desenhos e animes das sugestões" Margin="0,2,0,2"/>
+              </Grid>
+            </Border>
+            <TextBlock Foreground="#7F8AA0" FontSize="11" TextWrapping="Wrap" Margin="2,0,0,4"
+                       Text="Essas opções entram na compilação. A maioria também pode ser mudada depois na própria TV, em Free My TV &gt; Configurações da tela inicial."/>
+
+            <StackPanel x:Name="pnlFmtAcoes"/>
+
+            <TextBlock Text="TV LG (webOS) — FreeMyTvWebOS" Style="{StaticResource Titulo}"/>
+            <Border Style="{StaticResource Card}">
+              <StackPanel>
+                <TextBlock Foreground="#C3CAD6" TextWrapping="Wrap" Margin="0,0,0,10"
+                           Text="Para TVs LG. Na TV: instale o app Developer Mode pela LG Content Store, entre com uma conta grátis de desenvolvedor LG, ligue Dev Mode Status (a TV reinicia) e depois Key Server. O app mostra o IP e a Passphrase de 6 caracteres. Não precisa de root, e a tela inicial da LG continua lá."/>
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="IP da TV LG" Style="{StaticResource Rotulo}"/>
+                  <TextBox x:Name="txtLgIp" Width="140" Margin="0,4"/>
+                  <TextBlock Text="Passphrase" Style="{StaticResource Rotulo}" Margin="18,5,14,5"/>
+                  <TextBox x:Name="txtLgPass" Width="100" Margin="0,4"/>
+                  <Button Content="Instalar na TV LG" Tag="lg:instalar" Style="{StaticResource BtnOk}" Margin="18,0,0,0"/>
+                  <Button Content="Remover da TV LG" Tag="lg:remover" Style="{StaticResource Btn}"/>
+                </StackPanel>
+                <TextBlock x:Name="txtLgStatus" Foreground="#7F8AA0" FontSize="11" TextWrapping="Wrap" Margin="0,10,0,0"/>
+              </StackPanel>
+            </Border>
+
+            <TextBlock Text="TV Samsung (Tizen)" Style="{StaticResource Titulo}"/>
+            <Border Style="{StaticResource Card}">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Content="Baixar o TizenBrew Installer" Tag="url:https://github.com/reisxd/TizenBrewInstaller/releases/latest" Style="{StaticResource Btn}" VerticalAlignment="Center"/>
+                <TextBlock Foreground="#C3CAD6" TextWrapping="Wrap" Margin="0,0,16,0"
+                           Text="Samsung (2017 em diante): ative o Developer Mode da TV, abra o TizenBrew Installer no PC, conecte à TV e instale pelo GitHub digitando simbasjungles/free-my-tv. Em TVs de 2023 em diante, ele pede o login da conta Samsung uma vez."/>
+              </DockPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
       <TabItem x:Name="tabConfig" Header="Configurações">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel x:Name="pnlConfig" Margin="0,4,8,8"/>
@@ -701,6 +808,8 @@ __ESTILOS__
 Set-Splash 'Montando a interface...'
 $win = [Windows.Markup.XamlReader]::Load((New-Object System.Xml.XmlNodeReader $xaml))
 foreach ($n in 'tabs','tabLauncher','tabConfig','pnlLauncher','pnlConfig','logoHeader','txtVersao','btnTela','btnReiniciar',
+               'tabFmt','pnlFmtTopo','pnlFmtAcoes','txtFmtTmdb','txtFmtCidade','btnFmtCidade','txtFmtCoord','txtFmtRegiao','txtFmtIdioma','txtFmtTemp',
+               'txtFmtEsconder','txtFmtMoeda','chkFmtCripto','chkFmtAssist','chkFmtAnim','txtLgIp','txtLgPass','txtLgStatus',
                'txtIp','txtPorta','btnAnalisar','txtDevice','txtStatus','pb','ringScore','txtScore','txtScoreLabel','pnlCards',
                'btnSugeridos','btnEstadoAtual','chkTodos','dgItens','dgProc','txtDiag','txtLog','btnExportar','btnReverter','btnAplicar','txtMudancas') {
     Set-Variable -Name $n -Value $win.FindName($n) -Scope Script
@@ -724,6 +833,7 @@ function Set-Busy([bool]$busy, [string]$msg = $null) {
     $pb.IsIndeterminate = $busy
     foreach ($b in $btnAnalisar, $btnAplicar, $btnReverter, $btnSugeridos, $btnEstadoAtual, $btnExportar, $btnTela, $btnReiniciar) { $b.IsEnabled = -not $busy }
     $pnlConfig.IsEnabled = -not $busy
+    $tabFmt.IsEnabled = -not $busy
     if ($msg) { Set-Status $msg }
 }
 function Show-Msg([string]$msg, [string]$titulo = 'TV Otimizador', [string]$icone = 'Information') {
@@ -734,7 +844,11 @@ function Show-Msg([string]$msg, [string]$titulo = 'TV Otimizador', [string]$icon
 $script:CfgDir = Join-Path $env:APPDATA 'TV-Otimizador'
 $script:CfgFile = Join-Path $script:CfgDir 'config.json'
 function Get-Config {
-    $c = @{ ip = ''; porta = '5555'; adbPath = ''; scrcpyPath = '' }
+    $c = @{ ip = ''; porta = '5555'; adbPath = ''; scrcpyPath = ''
+            jdkHome = ''; sdkRoot = ''; bashExe = ''
+            fmtTmdb = ''; fmtRegiao = 'BR'; fmtCidade = ''; fmtLat = ''; fmtLon = ''; fmtIdioma = 'auto'; fmtTemp = 'auto'
+            fmtMoeda = 'BRL'; fmtCripto = 'false'; fmtAssist = 'false'; fmtAnim = 'false'; fmtEsconder = ''
+            lgIp = ''; lgPass = '' }
     if (Test-Path $script:CfgFile) {
         try {
             $j = Get-Content $script:CfgFile -Raw | ConvertFrom-Json
@@ -787,6 +901,7 @@ function Invoke-Exe([string]$exe, [string]$argumentos, [int]$timeoutSec = 60) {
         if ($sw.Elapsed.TotalSeconds -gt $timeoutSec) { try { $p.Kill() } catch {} ; break }
     }
     while (-not ($out.IsCompleted -and $err.IsCompleted)) { DoEvents; Start-Sleep -Milliseconds 20 }
+    try { $script:UltimoExit = $p.ExitCode } catch { $script:UltimoExit = -1 }
     return ($out.Result + $err.Result)
 }
 function Invoke-Adb([string]$argumentos, [int]$timeoutSec = 60) {
@@ -944,6 +1059,7 @@ function Start-Analise {
 function Build-Resultado($info, $mem, $top, $dmem, $disk, $pk, $cfg, $homes) {
     # --- sistema
     $info = @($info) + @('', '', '', '', '', '', '', '')
+    $script:Fabricante = $info[0].Trim()
     $fab = $info[0].Trim(); $modelo = $info[1].Trim(); $dev = $info[2].Trim(); $plat = $info[3].Trim(); $andr = $info[4].Trim()
     $upH = [double]((($info[5] -split '\s+')[0]) -replace ',', '.') / 3600
     $load1 = [double]((($info[6] -split '\s+')[0]) -replace ',', '.')
@@ -1086,6 +1202,10 @@ function Build-Resultado($info, $mem, $top, $dmem, $disk, $pk, $cfg, $homes) {
         Instalados       = $instHome
     }
     Update-LauncherTab
+    $script:FmtInstalado = $instalados.ContainsKey('io.freemytv')
+    $script:FmtVersao = ''
+    $script:FmtConectado = $true
+    Update-FmtTab
 
     # pacotes do catálogo
     $vistos = @{}
@@ -1245,6 +1365,10 @@ function Update-LauncherTab {
         "Para trocar de verdade, este app define o novo launcher como Home e desativa o do Google, o que libera RAM e acaba com os picos de CPU das recomendações. " +
         "Você perde a busca e as fileiras de recomendação da home do Google; apps, Play Store e configurações continuam funcionando.") $bt '#2F6FED'
 
+    if ($L.Instalados.Contains('io.freemytv')) {
+        New-Bloco 'Free My TV está instalado' 'Ele gerencia a própria tela inicial' ("Para usar ou deixar de usar o Free My TV como tela inicial, abra o app na TV e escolha Tela inicial > Free My TV ou Original. " +
+            "Não use os botões desta aba junto com ele: o Free My TV guarda a lista do que desligou e restaura tudo pelo 'Original'.") @(@{ Texto = 'Ir para a aba Free My TV'; Tag = 'aba:fmt'; Estilo = 'BtnPrim' }) '#8E5CF7'
+    }
     Add-Titulo $pnlLauncher 'Launchers alternativos'
 
     $mostrados = @{}
@@ -1260,7 +1384,7 @@ function Update-LauncherTab {
         }
     }
     foreach ($k in $L.Instalados.Keys) {
-        if ($mostrados[$k]) { continue }
+        if ($mostrados[$k] -or $k -eq 'io.freemytv') { continue }
         $comp = $L.Instalados[$k]
         $emUso = (-not $usandoGoogle) -and ($L.Atual -eq $comp)
         $nm = Get-NomeLauncher $comp
@@ -1270,6 +1394,7 @@ function Update-LauncherTab {
 }
 function Invoke-LauncherAcao([string]$tag) {
     if (-not $tag) { return }
+    if ($tag -eq 'aba:fmt') { $tabs.SelectedItem = $tabFmt; return }
     $hist = Get-Hist
     if ($tag -like 'play:*') {
         $pk = $tag.Substring(5)
@@ -1623,6 +1748,7 @@ function Update-ConfigTab {
         New-Bloco 'scrcpy (tela ao vivo)' 'Não encontrado' 'Opcional: mostra a tela da TV ao vivo e permite controlar com mouse e teclado. O download é feito da página oficial do projeto no GitHub (~40 MB).' @(
             @{ Texto = 'Localizar...'; Tag = 'dep:scrcpy:localizar' }, @{ Texto = 'Baixar e instalar'; Tag = 'dep:scrcpy:instalar'; Estilo = 'BtnOk' }) '#5B8DEF' $pnlConfig
     }
+    Add-CardFerramentas $pnlConfig
     Add-Titulo $pnlConfig 'Dados do app'
     New-Bloco 'Configurações e histórico' $script:CfgDir 'Guarda o IP da TV, os caminhos das ferramentas e o histórico do que este app alterou na TV (usado pelo "Reverter tudo").' @(
         @{ Texto = 'Abrir pasta'; Tag = 'cfg:pasta' }) $null $pnlConfig
@@ -1631,6 +1757,7 @@ function Update-ConfigTab {
 }
 function Invoke-ConfigAcao([string]$tag) {
     if (-not $tag) { return }
+    if ($tag -like 'fmt:*' -or $tag -like 'url:*') { Invoke-FmtAcao $tag; return }
     $p = $tag -split ':'
     switch ($p[0]) {
         'dep' {
@@ -1643,6 +1770,491 @@ function Invoke-ConfigAcao([string]$tag) {
         }
         'cfg' { if (-not (Test-Path $script:CfgDir)) { New-Item -ItemType Directory -Path $script:CfgDir -Force | Out-Null }; Start-Process explorer.exe $script:CfgDir }
     }
+}
+
+# ---------------------------------------------------------------- Free My TV
+$script:FmtRepo = 'https://github.com/simbasjungles/free-my-tv'
+$script:FmtZip = 'https://codeload.github.com/simbasjungles/free-my-tv/zip/refs/heads/main'
+$script:LgRepoRaw = 'https://raw.githubusercontent.com/danielthejoker18/FreeMyTvWebOS/main'
+$script:FmtPkg = 'io.freemytv'
+
+function ConvertTo-Barra([string]$p) { return ($p -replace '\\', '/') }
+function Quote-Arg([string]$a) { return '"' + ($a -replace '"', '\"') + '"' }
+function Get-Num([double]$v) { return $v.ToString('0.####', [Globalization.CultureInfo]::InvariantCulture) }
+
+# executa um comando longo (build, sdkmanager, extração) sem travar a janela, mostrando a última linha no status
+function Invoke-Longo([string]$cmdline, [hashtable]$amb = @{}, [string]$pasta = $null, [string]$rotulo = 'Executando', [int]$timeoutMin = 30) {
+    $log = Join-Path $env:TEMP ('tvotm_' + [guid]::NewGuid().ToString('N') + '.log')
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = 'cmd.exe'
+    $psi.Arguments = '/d /s /c "' + $cmdline + ' > "' + $log + '" 2>&1"'
+    $psi.UseShellExecute = $false; $psi.CreateNoWindow = $true
+    if ($pasta) { $psi.WorkingDirectory = $pasta }
+    foreach ($k in $amb.Keys) { $psi.EnvironmentVariables[$k] = [string]$amb[$k] }
+    $p = [Diagnostics.Process]::Start($psi)
+    $sw = [Diagnostics.Stopwatch]::StartNew()
+    $ult = ''
+    while (-not $p.HasExited) {
+        DoEvents; Start-Sleep -Milliseconds 250
+        if ($sw.Elapsed.TotalMinutes -gt $timeoutMin) { try { $p.Kill() } catch {} ; break }
+        try {
+            $fs = [IO.File]::Open($log, 'Open', 'Read', 'ReadWrite')
+            if ($fs.Length -gt 0) {
+                $fs.Seek([math]::Max(0, $fs.Length - 4000), 'Begin') | Out-Null
+                $t = (New-Object IO.StreamReader($fs)).ReadToEnd()
+                $l = ($t -split "[\r\n]+" | Where-Object { $_.Trim() } | Select-Object -Last 1)
+                if ($l) { $ult = $l.Trim() }
+            }
+            $fs.Close()
+        } catch {}
+        $txtStatus.Text = ('{0} ({1:mm\:ss})  {2}' -f $rotulo, $sw.Elapsed, $(if ($ult.Length -gt 110) { $ult.Substring(0, 110) + '…' } else { $ult }))
+    }
+    $p.WaitForExit()
+    $saida = ''
+    try { $saida = [IO.File]::ReadAllText($log) } catch {}
+    Remove-Item $log -Force -ErrorAction SilentlyContinue
+    return @{ Codigo = $p.ExitCode; Saida = $saida }
+}
+
+function Save-Download([string]$url, [string]$destino, [double]$total, [string]$nome) {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+    if (Test-Path $destino) { Remove-Item $destino -Force }
+    $wc = New-Object System.Net.WebClient
+    $wc.Headers.Add('User-Agent', 'TV-Otimizador')
+    $task = $wc.DownloadFileTaskAsync($url, $destino)
+    $pb.IsIndeterminate = ($total -le 0)
+    while (-not $task.IsCompleted) {
+        DoEvents; Start-Sleep -Milliseconds 150
+        $mb = if (Test-Path $destino) { (Get-Item $destino).Length / 1MB } else { 0 }
+        if ($total -gt 0) { $pb.Value = [math]::Min(100, $mb * 1MB / $total * 100); $txtStatus.Text = ('Baixando {0}... {1:N1} de {2:N1} MB' -f $nome, $mb, ($total / 1MB)) }
+        else { $txtStatus.Text = ('Baixando {0}... {1:N1} MB' -f $nome, $mb) }
+    }
+    $pb.IsIndeterminate = $true
+    if ($task.IsFaulted) { throw "Falha ao baixar $($nome): $($task.Exception.InnerException.Message)" }
+}
+
+function Expand-Zip([string]$zip, [string]$destino, [string]$nome) {
+    if (-not (Test-Path $destino)) { New-Item -ItemType Directory -Path $destino -Force | Out-Null }
+    $tar = Join-Path $env:SystemRoot 'System32\tar.exe'
+    if (Test-Path $tar) {
+        $r = Invoke-Longo ('"' + $tar + '" -xf "' + $zip + '" -C "' + $destino + '"') @{} $null "Descompactando $nome" 20
+        if ($r.Codigo -eq 0) { return }
+    }
+    $ps = "`$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; [IO.Compression.ZipFile]::ExtractToDirectory('$zip','$destino')"
+    $r = Invoke-Longo ('powershell.exe -NoProfile -Command "' + $ps + '"') @{} $null "Descompactando $nome" 20
+    if ($r.Codigo -ne 0) { throw "Falha ao descompactar $($nome): $($r.Saida)" }
+}
+
+function Test-Jdk([string]$jh) {
+    if (-not $jh -or -not (Test-Path (Join-Path $jh 'bin\javac.exe'))) { return $false }
+    $v = Invoke-Exe (Join-Path $jh 'bin\javac.exe') '-version' 15
+    if ($v -match 'javac\s+(\d+)') { return ([int]$matches[1] -ge 17) }
+    return $false
+}
+function Test-Sdk([string]$sr) {
+    if (-not $sr) { return $false }
+    $bt = Get-ChildItem -Path (Join-Path $sr 'build-tools') -Directory -ErrorAction SilentlyContinue | Where-Object { Test-Path (Join-Path $_.FullName 'aapt2.exe') }
+    $pl = Get-ChildItem -Path (Join-Path $sr 'platforms') -Directory -Filter 'android-*' -ErrorAction SilentlyContinue | Where-Object { Test-Path (Join-Path $_.FullName 'android.jar') }
+    return [bool]($bt -and $pl)
+}
+function Find-BuildTools {
+    $script:JdkHome = $null; $script:SdkRoot = $null; $script:BashExe = $null
+    foreach ($c in @($script:Cfg.jdkHome, $env:JAVA_HOME)) { if (Test-Jdk $c) { $script:JdkHome = $c; break } }
+    foreach ($c in @($script:Cfg.sdkRoot, $env:ANDROID_HOME, $env:ANDROID_SDK_ROOT, (Join-Path $env:LOCALAPPDATA 'Android\Sdk'))) { if (Test-Sdk $c) { $script:SdkRoot = $c; break } }
+    $cands = @($script:Cfg.bashExe, (Join-Path $env:ProgramFiles 'Git\bin\bash.exe'))
+    $g = Get-Command git -ErrorAction SilentlyContinue
+    if ($g) { $cands += (Join-Path (Split-Path (Split-Path $g.Source)) 'bin\bash.exe') }
+    foreach ($c in $cands) { if ($c -and (Test-Path $c)) { $script:BashExe = $c; break } }
+    $script:BuildOk = [bool]($script:JdkHome -and $script:SdkRoot -and $script:BashExe)
+    # OpenSSH do Windows (para TVs LG)
+    $script:SshExe = $null; $script:ScpExe = $null; $script:KeygenExe = $null
+    foreach ($par in @(@('ssh', 'SshExe'), @('scp', 'ScpExe'), @('ssh-keygen', 'KeygenExe'))) {
+        $c = Get-Command $par[0] -ErrorAction SilentlyContinue
+        $f = if ($c) { $c.Source } else { Join-Path $env:SystemRoot "System32\OpenSSH\$($par[0]).exe" }
+        if (Test-Path $f) { Set-Variable -Name $par[1] -Value $f -Scope Script }
+    }
+}
+
+function Install-BuildTools {
+    $fb = New-Object System.Windows.Forms.FolderBrowserDialog
+    $fb.Description = 'Escolha a pasta para as ferramentas de compilação (JDK 17, Android SDK e Git Bash, cerca de 1,5 GB instalados). Será criada a subpasta freemytv-build.'
+    $fb.ShowNewFolderButton = $true
+    $fb.SelectedPath = $(if ($PSScriptRoot) { $PSScriptRoot } else { [Environment]::GetFolderPath('MyDocuments') })
+    if ($fb.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) { return $false }
+    $base = Join-Path $fb.SelectedPath 'freemytv-build'
+    New-Item -ItemType Directory -Path $base -Force | Out-Null
+    $tmp = Join-Path $env:TEMP 'tvotm_build'; New-Item -ItemType Directory -Path $tmp -Force | Out-Null
+    $ok = $false
+    Set-Busy $true 'Preparando as ferramentas de compilação...'
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+        # 1) JDK 17 (Eclipse Temurin)
+        if (-not $script:JdkHome) {
+            $j = Invoke-RestMethod -Uri 'https://api.adoptium.net/v3/assets/latest/17/hotspot?architecture=x64&image_type=jdk&os=windows&vendor=eclipse' -Headers @{ 'User-Agent' = 'TV-Otimizador' }
+            $pkg = @($j)[0].binary.package
+            $z = Join-Path $tmp $pkg.name
+            Save-Download $pkg.link $z ([double]$pkg.size) 'JDK 17 (Eclipse Temurin)'
+            Expand-Zip $z $base 'JDK 17'
+            Remove-Item $z -Force -ErrorAction SilentlyContinue
+            $jd = Get-ChildItem -Path $base -Directory -Filter 'jdk-17*' | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+            if (-not $jd -or -not (Test-Jdk $jd.FullName)) { throw 'O JDK foi baixado, mas não encontrei o javac 17.' }
+            $script:Cfg.jdkHome = $jd.FullName; $script:JdkHome = $jd.FullName; Save-Config
+            Log "JDK instalado em $($jd.FullName)"
+        }
+        # 2) Android SDK (command-line tools + build-tools 34 + platform 34)
+        if (-not $script:SdkRoot) {
+            $sdk = Join-Path $base 'android-sdk'
+            $sdkm = Join-Path $sdk 'cmdline-tools\latest\bin\sdkmanager.bat'
+            if (-not (Test-Path $sdkm)) {
+                $arq = 'commandlinetools-win-13114758_latest.zip'
+                try {
+                    $xml = [xml](New-Object System.Net.WebClient).DownloadString('https://dl.google.com/android/repository/repository2-3.xml')
+                    $rp = $xml.SelectSingleNode("//*[local-name()='remotePackage'][@path='cmdline-tools;latest']")
+                    foreach ($a in $rp.SelectNodes(".//*[local-name()='archive']")) {
+                        $os = $a.SelectSingleNode("./*[local-name()='host-os']")
+                        $u = $a.SelectSingleNode(".//*[local-name()='url']")
+                        if ($os -and $os.InnerText -eq 'windows' -and $u) { $arq = $u.InnerText; break }
+                    }
+                } catch {}
+                $z = Join-Path $tmp $arq
+                Save-Download "https://dl.google.com/android/repository/$arq" $z 0 'Android command-line tools'
+                $tmpX = Join-Path $tmp 'cmdline'; Remove-Item $tmpX -Recurse -Force -ErrorAction SilentlyContinue
+                Expand-Zip $z $tmpX 'Android command-line tools'
+                New-Item -ItemType Directory -Path (Join-Path $sdk 'cmdline-tools') -Force | Out-Null
+                Remove-Item (Join-Path $sdk 'cmdline-tools\latest') -Recurse -Force -ErrorAction SilentlyContinue
+                Move-Item (Join-Path $tmpX 'cmdline-tools') (Join-Path $sdk 'cmdline-tools\latest')
+                Remove-Item $z, $tmpX -Recurse -Force -ErrorAction SilentlyContinue
+            }
+            $amb = @{ JAVA_HOME = $script:JdkHome }
+            $r = Invoke-Longo ('(for /l %i in (1,1,40) do @echo y) | "' + $sdkm + '" --sdk_root="' + $sdk + '" --licenses') $amb $null 'Aceitando as licenças do Android SDK' 10
+            $r = Invoke-Longo ('(for /l %i in (1,1,10) do @echo y) | "' + $sdkm + '" --sdk_root="' + $sdk + '" "build-tools;34.0.0" "platforms;android-34"') $amb $null 'Baixando build-tools 34 e Android 34 (sdkmanager)' 40
+            if (-not (Test-Sdk $sdk)) { throw "O sdkmanager não instalou o build-tools/platform 34. Saída:`n$(($r.Saida -split "`n" | Select-Object -Last 12) -join "`n")" }
+            $script:Cfg.sdkRoot = $sdk; $script:SdkRoot = $sdk; Save-Config
+            Log "Android SDK instalado em $sdk"
+        }
+        # 3) Git Bash (PortableGit), se não houver Git for Windows
+        if (-not $script:BashExe) {
+            $rel = Invoke-RestMethod -Uri 'https://api.github.com/repos/git-for-windows/git/releases/latest' -Headers @{ 'User-Agent' = 'TV-Otimizador' }
+            $asset = $rel.assets | Where-Object { $_.name -like 'PortableGit-*-64-bit.7z.exe' } | Select-Object -First 1
+            if (-not $asset) { throw 'Não encontrei o PortableGit 64 bits na última versão do Git for Windows.' }
+            $z = Join-Path $tmp $asset.name
+            Save-Download $asset.browser_download_url $z ([double]$asset.size) 'Git Bash (PortableGit)'
+            $dg = Join-Path $base 'PortableGit'
+            $r = Invoke-Longo ('"' + $z + '" -y -o"' + $dg + '"') @{} $null 'Extraindo o Git Bash' 15
+            Remove-Item $z -Force -ErrorAction SilentlyContinue
+            $b = Join-Path $dg 'bin\bash.exe'
+            if (-not (Test-Path $b)) { throw 'O PortableGit foi extraído, mas não encontrei o bin\bash.exe.' }
+            $script:Cfg.bashExe = $b; $script:BashExe = $b; Save-Config
+            Log "Git Bash instalado em $dg"
+        }
+        $ok = $true
+        Set-Status 'Ferramentas de compilação prontas.'
+    } catch {
+        Log "ERRO nas ferramentas de compilação: $($_.Exception.Message)"
+        Show-Msg "Não foi possível preparar as ferramentas:`n`n$($_.Exception.Message)" 'Erro' 'Error'
+    } finally {
+        Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
+        Set-Busy $false
+        Find-BuildTools
+        Update-ConfigTab; Update-FmtTab
+    }
+    return $ok
+}
+
+function Add-CardFerramentas($painel) {
+    $itens = @(
+        @{ N = 'JDK 17'; V = $script:JdkHome }
+        @{ N = 'Android SDK'; V = $script:SdkRoot }
+        @{ N = 'Git Bash'; V = $script:BashExe }
+    )
+    $linhas = ($itens | ForEach-Object { '{0}: {1}' -f $_.N, $(if ($_.V) { $_.V } else { 'não encontrado' }) }) -join "`n"
+    if ($script:BuildOk) {
+        New-Bloco 'Ferramentas para compilar o Free My TV' 'Instaladas' ($linhas + "`nUsadas só para compilar o Free My TV para Android TV.") @(@{ Texto = 'Reinstalar'; Tag = 'fmt:ferramentas' }) '#3DDC84' $painel
+    } else {
+        New-Bloco 'Ferramentas para compilar o Free My TV' 'Opcional · cerca de 500 MB de download' ($linhas + "`nNecessárias só para instalar o Free My TV em Android TV. O app baixa tudo das fontes oficiais (Adoptium, Google e Git for Windows).") @(@{ Texto = 'Baixar e instalar'; Tag = 'fmt:ferramentas'; Estilo = 'BtnOk' }) '#5B8DEF' $painel
+    }
+    $ssh = if ($script:SshExe -and $script:ScpExe -and $script:KeygenExe) { "Encontrado: $(Split-Path $script:SshExe)" } else { 'Não encontrado: ative em Configurações do Windows > Sistema > Recursos opcionais > Cliente OpenSSH' }
+    New-Bloco 'Cliente OpenSSH do Windows' $ssh 'Usado só para instalar o Free My TV em TVs LG (Developer Mode).' @() $(if ($script:SshExe) { '#3DDC84' } else { '#FFB020' }) $painel
+}
+
+function Read-FmtInputs {
+    $c = $script:Cfg
+    $txtFmtTmdb.Text = $c.fmtTmdb; $txtFmtCidade.Text = $c.fmtCidade; $txtFmtRegiao.Text = $c.fmtRegiao
+    $txtFmtIdioma.Text = $c.fmtIdioma; $txtFmtTemp.Text = $c.fmtTemp; $txtFmtEsconder.Text = $c.fmtEsconder; $txtFmtMoeda.Text = $c.fmtMoeda
+    $chkFmtCripto.IsChecked = ($c.fmtCripto -eq 'true'); $chkFmtAssist.IsChecked = ($c.fmtAssist -eq 'true'); $chkFmtAnim.IsChecked = ($c.fmtAnim -eq 'true')
+    $txtFmtCoord.Text = if ($c.fmtLat) { "Coordenadas: $($c.fmtLat), $($c.fmtLon)" } else { 'Digite a cidade e clique em Buscar.' }
+    $txtLgIp.Text = $c.lgIp; $txtLgPass.Text = $c.lgPass
+}
+function Save-FmtInputs {
+    $c = $script:Cfg
+    $c.fmtTmdb = $txtFmtTmdb.Text.Trim(); $c.fmtCidade = $txtFmtCidade.Text.Trim()
+    $c.fmtRegiao = $(if ($txtFmtRegiao.Text.Trim()) { $txtFmtRegiao.Text.Trim().ToUpper() } else { 'BR' })
+    $c.fmtIdioma = $(if ($txtFmtIdioma.Text.Trim()) { $txtFmtIdioma.Text.Trim() } else { 'auto' })
+    $c.fmtTemp = $(if ($txtFmtTemp.Text.Trim()) { $txtFmtTemp.Text.Trim() } else { 'auto' })
+    $c.fmtEsconder = $txtFmtEsconder.Text.Trim()
+    $c.fmtMoeda = $(if ($txtFmtMoeda.Text.Trim()) { $txtFmtMoeda.Text.Trim().ToUpper() } else { 'BRL' })
+    $c.fmtCripto = ([bool]$chkFmtCripto.IsChecked).ToString().ToLower()
+    $c.fmtAssist = ([bool]$chkFmtAssist.IsChecked).ToString().ToLower()
+    $c.fmtAnim = ([bool]$chkFmtAnim.IsChecked).ToString().ToLower()
+    $c.lgIp = $txtLgIp.Text.Trim(); $c.lgPass = $txtLgPass.Text.Trim()
+    Save-Config
+}
+
+function Find-Cidade {
+    $nome = $txtFmtCidade.Text.Trim()
+    if (-not $nome) { Show-Msg 'Digite o nome da cidade.'; return }
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+        $r = Invoke-RestMethod -Uri ("https://geocoding-api.open-meteo.com/v1/search?count=1&language=pt&format=json&name=" + [uri]::EscapeDataString($nome)) -TimeoutSec 15
+        $g = @($r.results)[0]
+        if (-not $g) { $txtFmtCoord.Text = 'Cidade não encontrada. Tente outro nome.'; return }
+        $script:Cfg.fmtLat = Get-Num ([double]$g.latitude); $script:Cfg.fmtLon = Get-Num ([double]$g.longitude)
+        $txtFmtCidade.Text = $g.name
+        $txtFmtCoord.Text = ('{0}{1}, {2}  ({3}, {4})' -f $g.name, $(if ($g.admin1) { ", $($g.admin1)" } else { '' }), $g.country, $script:Cfg.fmtLat, $script:Cfg.fmtLon)
+        Save-FmtInputs
+    } catch { $txtFmtCoord.Text = "Erro na busca: $($_.Exception.Message)" }
+}
+
+function Update-FmtTab {
+    $pnlFmtTopo.Children.Clear(); $pnlFmtAcoes.Children.Clear()
+    New-Bloco 'Free My TV' 'Projeto de simbasjungles · licença MIT · freemytv.io' ("Uma tela inicial leve e sem anúncios no lugar da tela da fábrica: seus apps, sugestões do que está em alta só nos serviços que você tem, clima e tema que acompanha o pôr do sol. " +
+        "Usa cerca de 60% menos memória que a tela do Google TV. Não precisa de root, não desinstala nada e volta à tela original com um botão.") @(
+        @{ Texto = 'Site'; Tag = 'url:https://freemytv.io/pt/' }, @{ Texto = 'Código-fonte'; Tag = "url:$($script:FmtRepo)" }) '#8E5CF7' $pnlFmtTopo
+
+    if (-not $script:FmtConectado) {
+        New-Bloco 'Esta TV (Android TV / Google TV)' 'Ainda não analisada' 'Clique em "Conectar e analisar" para ver se o Free My TV já está instalado nesta TV.' @() $null $pnlFmtTopo
+    } elseif ($script:FmtInstalado) {
+        if (-not $script:FmtVersao -and $script:Alvo) {
+            $o = Invoke-Tv "dumpsys package $($script:FmtPkg) | grep -m1 versionName" 15
+            if ($o -match 'versionName=(\S+)') { $script:FmtVersao = $matches[1] }
+        }
+        $emUso = $script:LauncherInfo -and ([string]$script:LauncherInfo.Atual -like "$($script:FmtPkg)/*")
+        $sub = 'Instalado' + $(if ($script:FmtVersao) { " · versão $($script:FmtVersao)" } else { '' }) + $(if ($emUso) { ' · é a tela inicial' } else { ' · não é a tela inicial' })
+        New-Bloco 'Esta TV (Android TV / Google TV)' $sub 'Para ativar ou desativar como tela inicial: na TV, abra o Free My TV > Tela inicial > Free My TV (ou Original para voltar à tela da fábrica). Dá para fazer isso daqui pela janela "Ver tela da TV".' @(
+            @{ Texto = 'Abrir na TV'; Tag = 'fmt:abrir'; Estilo = 'BtnPrim' }, @{ Texto = 'Desinstalar'; Tag = 'fmt:desinstalar'; Estilo = 'BtnWarn' }) '#3DDC84' $pnlFmtTopo
+    } else {
+        New-Bloco 'Esta TV (Android TV / Google TV)' 'Não instalado' 'Ajuste as opções abaixo e clique em "Compilar e instalar na TV".' @() '#FFB020' $pnlFmtTopo
+    }
+
+    Add-Titulo $pnlFmtAcoes 'Instalação nesta TV'
+    if (-not $script:BuildOk) {
+        Add-CardFerramentas $pnlFmtAcoes
+    }
+    $acao = if ($script:FmtInstalado) { 'Recompilar e atualizar na TV' } else { 'Compilar e instalar na TV' }
+    $desc = ('O app baixa o código mais recente do Free My TV, compila com as suas opções (o próprio build.sh do projeto), instala na TV pelo ADB' +
+        $(if ($script:Fabricante -match 'TCL') { ', libera a execução em segundo plano que a TCL bloqueia' } else { '' }) + ' e abre o app. A primeira compilação leva alguns minutos.')
+    $tag = if ($script:BuildOk) { 'fmt:instalar' } else { $null }
+    New-Bloco $acao $(if ($script:BuildOk) { 'Pronto para compilar' } else { 'Instale primeiro as ferramentas de compilação (acima)' }) $desc @(
+        @{ Texto = $acao; Tag = $tag; Estilo = 'BtnOk' }) $(if ($script:BuildOk) { '#3DDC84' } else { $null }) $pnlFmtAcoes
+}
+
+function Install-Fmt {
+    Save-FmtInputs
+    if (-not $script:AdbExe) { $tabs.SelectedItem = $tabConfig; Show-Msg 'Instale o ADB na aba Configurações primeiro.'; return }
+    if (-not $script:BuildOk) { if (-not (Install-BuildTools)) { return } }
+    if (-not $txtIp.Text.Trim()) { Show-Msg 'Informe o IP da TV no topo da janela.'; return }
+    $c = $script:Cfg
+    $hist = Get-Hist
+    $avisoLauncher = if ($hist.launcher) { "`n`nO launcher do Google foi desativado pelo TV Otimizador. Ele será reativado antes, porque o Free My TV gerencia a tela inicial sozinho (e restaura tudo no modo Original)." } else { '' }
+    $resumo = "Cidade: $(if ($c.fmtCidade) { "$($c.fmtCidade) ($($c.fmtLat), $($c.fmtLon))" } else { 'não definida (pode ajustar na TV depois)' })`n" +
+              "Sugestões de filmes/séries: $(if ($c.fmtTmdb) { 'sim (chave TMDB)' } else { 'não (sem chave TMDB)' })`nPaís: $($c.fmtRegiao) · Idioma: $($c.fmtIdioma)"
+    $r = [System.Windows.MessageBox]::Show($win, "Compilar o Free My TV e instalar na TV $($txtIp.Text.Trim())?`n`n$resumo$avisoLauncher", 'Free My TV', 'YesNo', 'Question')
+    if ($r -ne 'Yes') { return }
+
+    $dir = Join-Path $script:CfgDir 'freemytv'
+    $ks = Join-Path $dir 'freemytv.keystore'
+    $zip = Join-Path $env:TEMP 'tvotm_freemytv.zip'
+    $ok = $false
+    Set-Busy $true 'Baixando o código do Free My TV...'
+    try {
+        if (-not @(Connect-Tv)[-1]) { throw 'A TV não respondeu. Verifique se ela está ligada e com a depuração ativada.' }
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+        $src = Join-Path $dir 'src'
+        Remove-Item $src -Recurse -Force -ErrorAction SilentlyContinue
+        Save-Download $script:FmtZip $zip 0 'código do Free My TV'
+        Expand-Zip $zip $src 'código do Free My TV'
+        $raiz = Get-ChildItem -Path $src -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'build.sh') } | Select-Object -First 1
+        if (-not $raiz) { throw 'O código baixado não tem o build.sh.' }
+        $raiz = $raiz.FullName
+        $versaoSrc = ''
+        $man = Join-Path $raiz 'app\AndroidManifest.xml'
+        if ((Test-Path $man) -and ((Get-Content $man -Raw) -match 'versionName="([^"]+)"')) { $versaoSrc = $matches[1] }
+
+        $props = @(
+            '# Gerado pelo TV Otimizador'
+            "tmdb_key=$($c.fmtTmdb)"
+            "tmdb_region=$($c.fmtRegiao)"
+            "latitude=$(if ($c.fmtLat) { $c.fmtLat } else { '-15.7939' })"
+            "longitude=$(if ($c.fmtLon) { $c.fmtLon } else { '-47.8828' })"
+            "city=$($c.fmtCidade)"
+            "hide_animation=$($c.fmtAnim)"
+            "language=$($c.fmtIdioma)"
+            "show_crypto=$($c.fmtCripto)"
+            "currency=$($c.fmtMoeda)"
+            "temperature=$($c.fmtTemp)"
+            "disable_assistant=$($c.fmtAssist)"
+            "hide_services=$($c.fmtEsconder)"
+            'watchmode_key='
+        ) -join "`n"
+        [IO.File]::WriteAllText((Join-Path $raiz 'config.properties'), $props + "`n", (New-Object System.Text.UTF8Encoding $false))
+        if (Test-Path $ks) { Copy-Item $ks (Join-Path $raiz 'freemytv.keystore') -Force }
+
+        $amb = @{
+            JAVA_HOME = (ConvertTo-Barra $script:JdkHome); ANDROID_HOME = (ConvertTo-Barra $script:SdkRoot)
+            MSYSTEM = 'MINGW64'; CHERE_INVOKING = '1'
+            PATH = "$(Join-Path $script:JdkHome 'bin');$env:PATH"
+        }
+        $b = Invoke-Longo ('"' + $script:BashExe + '" build.sh') $amb $raiz 'Compilando o Free My TV' 30
+        Log ("build.sh terminou com código $($b.Codigo).`r`n" + (($b.Saida -split "`n" | Select-Object -Last 25) -join "`r`n"))
+        $apk = Join-Path $raiz 'FreeMyTV.apk'
+        if ($b.Codigo -ne 0 -or -not (Test-Path $apk)) { throw "A compilação falhou. Últimas linhas:`n$(($b.Saida -split "`n" | Select-Object -Last 12) -join "`n")" }
+        if (Test-Path (Join-Path $raiz 'freemytv.keystore')) { Copy-Item (Join-Path $raiz 'freemytv.keystore') $ks -Force }
+        Copy-Item $apk (Join-Path $dir 'FreeMyTV.apk') -Force
+
+        if ($hist.launcher) {
+            Set-Status 'Reativando o launcher do Google...'
+            Log ('Reativar launcher do Google: ' + (Invoke-Tv "pm enable $($script:LauncherGoogle)").Trim())
+            Invoke-Tv "cmd package set-home-activity $($script:LauncherGoogleComp)" | Out-Null
+            $hist.launcher = ''; Save-Hist $hist
+        }
+        Set-Status 'Instalando o Free My TV na TV...'
+        $o = Invoke-Adb ('-s ' + $script:Alvo + ' install -r "' + $apk + '"') 300
+        Log "adb install: $($o.Trim())"
+        if ($o -notmatch 'Success') {
+            if ($o -match 'INSTALL_FAILED_UPDATE_INCOMPATIBLE') { throw "A TV já tem um Free My TV assinado com outra chave (instalado por outro computador). Desinstale-o na TV (escolha Original antes) e tente de novo.`n`n$o" }
+            throw "O adb install falhou:`n$o"
+        }
+        if ($script:Fabricante -match 'TCL') {
+            Invoke-Tv "appops set $($script:FmtPkg) AUTO_START allow || appops set $($script:FmtPkg) APP_AUTO_START allow" | Out-Null
+            Log 'TCL: execução em segundo plano liberada (appops AUTO_START).'
+        }
+        Invoke-Tv "monkey -p $($script:FmtPkg) -c android.intent.category.LEANBACK_LAUNCHER 1" | Out-Null
+        $script:FmtInstalado = $true; $script:FmtVersao = $versaoSrc
+        $ok = $true
+        Set-Status "Free My TV $versaoSrc instalado."
+    } catch {
+        Log "ERRO Free My TV: $($_.Exception.Message)"
+        Show-Msg $_.Exception.Message 'Free My TV' 'Error'
+    } finally {
+        Remove-Item $zip -Force -ErrorAction SilentlyContinue
+        Set-Busy $false
+        Update-FmtTab
+    }
+    if ($ok) {
+        $r = [System.Windows.MessageBox]::Show($win, ("Free My TV instalado e aberto na TV.`n`nFalta um passo na TV: em Free My TV > Tela inicial, escolha Free My TV e aceite o aviso " +
+            "'Permitir depuração USB' marcando 'Sempre permitir' (é o próprio app usando o ADB da TV para trocar a tela inicial).`n`nAbrir a tela da TV aqui para fazer isso pelo PC?"), 'Free My TV', 'YesNo', 'Information')
+        if ($r -eq 'Yes') { Open-TelaWindow }
+    }
+}
+
+function Invoke-FmtAcao([string]$tag) {
+    if (-not $tag) { return }
+    if ($tag -like 'url:*') { Start-Process $tag.Substring(4); return }
+    switch ($tag) {
+        'fmt:cidade'      { Find-Cidade }
+        'fmt:ferramentas' { Install-BuildTools | Out-Null }
+        'fmt:instalar'    { Install-Fmt }
+        'fmt:abrir' {
+            if (-not @(Connect-Tv)[-1]) { Show-Msg 'TV sem conexão.'; return }
+            Invoke-Tv "monkey -p $($script:FmtPkg) -c android.intent.category.LEANBACK_LAUNCHER 1" | Out-Null
+            Open-TelaWindow
+        }
+        'fmt:desinstalar' {
+            $r = [System.Windows.MessageBox]::Show($win, ("Antes de desinstalar, abra o Free My TV na TV e escolha Tela inicial > Original: isso devolve a tela da fábrica e reativa tudo o que ele desligou.`n`n" +
+                "Sim = já fiz isso, desinstalar agora`nNão = abrir o Free My TV na TV para fazer isso primeiro"), 'Desinstalar o Free My TV', 'YesNoCancel', 'Warning')
+            if ($r -eq 'No') { Invoke-FmtAcao 'fmt:abrir'; return }
+            if ($r -ne 'Yes') { return }
+            Set-Busy $true 'Desinstalando o Free My TV...'
+            try {
+                if (-not @(Connect-Tv)[-1]) { throw 'TV sem conexão.' }
+                $o = Invoke-Adb "-s $($script:Alvo) uninstall $($script:FmtPkg)" 60
+                Log "adb uninstall: $($o.Trim())"
+                if ($o -match 'Success') { $script:FmtInstalado = $false; Set-Status 'Free My TV desinstalado.' } else { throw $o }
+            } catch { Show-Msg $_.Exception.Message 'Erro' 'Error' } finally { Set-Busy $false; Update-FmtTab }
+        }
+        'lg:instalar' { Install-Lg }
+        'lg:remover'  { Remove-Lg }
+    }
+}
+
+# ---------------------------------------------------------------- Free My TV para LG (webOS, Developer Mode)
+function Get-LgSsh([string]$ip) {
+    $dir = Join-Path $script:CfgDir 'lg'
+    New-Item -ItemType Directory -Path $dir -Force | Out-Null
+    $kh = Join-Path $dir 'known_hosts'
+    $chave = Join-Path $dir ('webos_' + ($ip -replace '[^\w]', '_') + '_rsa')
+    $opts = '-o StrictHostKeyChecking=no -o ' + (Quote-Arg ('UserKnownHostsFile="' + (ConvertTo-Barra $kh) + '"')) + ' -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -o ConnectTimeout=10 -o BatchMode=yes'
+    return @{ Dir = $dir; Chave = $chave; Opts = $opts }
+}
+function Get-LgChave([string]$ip, [string]$pass, $s) {
+    if (Test-Path $s.Chave) { return }
+    if (-not $pass) { throw 'Informe a Passphrase mostrada no app Developer Mode da TV LG.' }
+    Set-Status 'Baixando a chave de acesso da TV LG (Key Server)...'
+    try { Invoke-WebRequest -Uri "http://${ip}:9991/webos_rsa" -OutFile $s.Chave -TimeoutSec 10 -UseBasicParsing }
+    catch { Remove-Item $s.Chave -Force -ErrorAction SilentlyContinue; throw "Não consegui baixar a chave da TV ($($_.Exception.Message)). Confira o IP e se o Key Server está ligado no app Developer Mode." }
+    Invoke-Exe 'icacls.exe' ((Quote-Arg $s.Chave) + ' /inheritance:r /grant:r ' + (Quote-Arg "$($env:USERNAME):F")) 15 | Out-Null
+    $o = Invoke-Exe $script:KeygenExe ('-p -P ' + (Quote-Arg $pass) + ' -N "" -f ' + (Quote-Arg $s.Chave)) 20
+    if ($script:UltimoExit -ne 0) { Remove-Item $s.Chave -Force -ErrorAction SilentlyContinue; throw "A Passphrase não abriu a chave da TV (confira as 6 letras).`n$o" }
+    Log "Chave da TV LG $ip salva."
+}
+function Invoke-LgLuna([string]$ip, $s, [string]$cmd, [int]$t = 90) {
+    $base = $s.Opts + ' -p 9922 -i ' + (Quote-Arg $s.Chave) + " prisoner@$ip " + (Quote-Arg $cmd)
+    $o = Invoke-Exe $script:SshExe ('-tt ' + $base) $t
+    if ($o -match 'PTY allocation request failed') { $o = Invoke-Exe $script:SshExe $base $t }
+    return $o
+}
+function Install-Lg {
+    Save-FmtInputs
+    $ip = $txtLgIp.Text.Trim(); $pass = $txtLgPass.Text.Trim()
+    if (-not $ip) { Show-Msg 'Informe o IP da TV LG (aparece no app Developer Mode).'; return }
+    if (-not ($script:SshExe -and $script:ScpExe -and $script:KeygenExe)) { Show-Msg 'O Cliente OpenSSH do Windows não foi encontrado. Ative em Configurações do Windows > Sistema > Recursos opcionais > Cliente OpenSSH.' 'OpenSSH' 'Warning'; return }
+    $r = [System.Windows.MessageBox]::Show($win, "Instalar o Free My TV (FreeMyTvWebOS) na TV LG $($ip)?", 'Free My TV para LG', 'YesNo', 'Question')
+    if ($r -ne 'Yes') { return }
+    $s = Get-LgSsh $ip
+    Set-Busy $true 'Preparando a instalação na TV LG...'
+    try {
+        Get-LgChave $ip $pass $s
+        Set-Status 'Baixando o pacote do Free My TV para webOS...'
+        $info = Invoke-RestMethod -Uri "$($script:LgRepoRaw)/app/appinfo.json" -Headers @{ 'User-Agent' = 'TV-Otimizador' }
+        $id = $info.id; $ver = $info.version
+        $ipkNome = "${id}_${ver}_all.ipk"
+        $ipk = Join-Path $s.Dir $ipkNome
+        Save-Download "$($script:LgRepoRaw)/dist/$ipkNome" $ipk 0 "Free My TV webOS $ver"
+        Set-Status 'Enviando para a TV LG...'
+        $o = Invoke-Exe $script:ScpExe ($s.Opts + ' -P 9922 -i ' + (Quote-Arg $s.Chave) + ' ' + (Quote-Arg $ipk) + " prisoner@${ip}:/media/developer/temp/app.ipk") 180
+        if ($script:UltimoExit -ne 0) { throw "Falha ao enviar o pacote (scp). Se a Passphrase mudou, apague a chave antiga em $($s.Dir).`n$o" }
+        Set-Status 'Instalando na TV LG...'
+        $payload = '{"id":"' + $id + '","ipkUrl":"/media/developer/temp/app.ipk","subscribe":true}'
+        $o = Invoke-LgLuna $ip $s ("timeout 45 luna-send-pub -n 30 luna://com.webos.appInstallService/dev/install '" + $payload + "'") 90
+        Log "LG install: $(($o -split "`n" | Select-Object -Last 3) -join ' ')"
+        if ($o -notmatch '"state"\s*:\s*"installed"') { throw "A TV não confirmou a instalação. Saída:`n$(($o -split "`n" | Select-Object -Last 8) -join "`n")" }
+        $o = Invoke-LgLuna $ip $s ("luna-send-pub -n 1 luna://com.webos.applicationManager/launch '{""id"":""" + $id + """}'") 30
+        $txtLgStatus.Text = "Free My TV $ver instalado na TV LG $ip em $(Get-Date -Format 'dd/MM HH:mm'). Dica: no controle, segure o número 1 dentro do app para abri-lo com um toque. O Developer Mode dura cerca de 40 dias: abra o app Developer Mode e use EXTEND de vez em quando."
+        Set-Status "Free My TV instalado na TV LG $ip."
+        Show-Msg "Free My TV $ver instalado e aberto na TV LG.`n`nO Developer Mode da LG expira em cerca de 40 dias: abra o app Developer Mode na TV e clique em EXTEND de vez em quando para não perder o app."
+    } catch {
+        Log "ERRO LG: $($_.Exception.Message)"; $txtLgStatus.Text = "Erro: $($_.Exception.Message)"
+        Show-Msg $_.Exception.Message 'Free My TV para LG' 'Error'
+    } finally { Set-Busy $false }
+}
+function Remove-Lg {
+    Save-FmtInputs
+    $ip = $txtLgIp.Text.Trim()
+    if (-not $ip) { Show-Msg 'Informe o IP da TV LG.'; return }
+    if (-not $script:SshExe) { Show-Msg 'O Cliente OpenSSH do Windows não foi encontrado.' 'OpenSSH' 'Warning'; return }
+    $r = [System.Windows.MessageBox]::Show($win, "Remover o Free My TV da TV LG $($ip)?", 'Free My TV para LG', 'YesNo', 'Question')
+    if ($r -ne 'Yes') { return }
+    $s = Get-LgSsh $ip
+    Set-Busy $true 'Removendo da TV LG...'
+    try {
+        Get-LgChave $ip $txtLgPass.Text.Trim() $s
+        $info = Invoke-RestMethod -Uri "$($script:LgRepoRaw)/app/appinfo.json" -Headers @{ 'User-Agent' = 'TV-Otimizador' }
+        $o = Invoke-LgLuna $ip $s ("timeout 30 luna-send-pub -n 10 luna://com.webos.appInstallService/dev/remove '{""id"":""" + $info.id + """,""subscribe"":true}'") 60
+        Log "LG remove: $(($o -split "`n" | Select-Object -Last 3) -join ' ')"
+        if ($o -match '"state"\s*:\s*"removed"|"returnValue"\s*:\s*true') { $txtLgStatus.Text = "Free My TV removido da TV LG $ip."; Set-Status 'Removido da TV LG.' }
+        else { throw "A TV não confirmou a remoção. Saída:`n$(($o -split "`n" | Select-Object -Last 8) -join "`n")" }
+    } catch { Log "ERRO LG: $($_.Exception.Message)"; Show-Msg $_.Exception.Message 'Free My TV para LG' 'Error' }
+    finally { Set-Busy $false }
 }
 
 # ---------------------------------------------------------------- aplicar / reverter
@@ -1807,12 +2419,18 @@ $pnlConfig.AddHandler([System.Windows.Controls.Primitives.ButtonBase]::ClickEven
     if ($b -is [System.Windows.Controls.Button]) { $e.Handled = $true; Invoke-ConfigAcao ([string]$b.Tag) }
 })
 $btnTela.Add_Click({ Open-TelaWindow })
+$tabFmt.AddHandler([System.Windows.Controls.Primitives.ButtonBase]::ClickEvent, [System.Windows.RoutedEventHandler]{
+    param($sender, $e)
+    $b = $e.OriginalSource
+    if ($b -is [System.Windows.Controls.Button] -and $b.Tag) { $e.Handled = $true; Invoke-FmtAcao ([string]$b.Tag) }
+})
+$txtFmtCidade.Add_KeyDown({ if ($_.Key -eq 'Return') { Find-Cidade; $_.Handled = $true } })
 $btnReiniciar.Add_Click({ Restart-Tv })
 $win.Add_Closing({
     $script:TimerTela.Stop()
     if ($script:TelaWin) { $script:TelaWin.Close() }
     if ($txtIp.Text.Trim()) { $script:Cfg.ip = $txtIp.Text.Trim(); $script:Cfg.porta = $txtPorta.Text.Trim() }
-    Save-Config
+    Save-FmtInputs
 })
 $chkTodos.Add_Click({ if ($dgItens.ItemsSource) { $dgItens.ItemsSource.Refresh() } })
 $txtIp.Add_KeyDown({ if ($_.Key -eq 'Return') { Start-Analise } })
@@ -1825,6 +2443,11 @@ $logoHeader.Content = New-Logo 54
 if ($script:LogoIcon) { $win.Icon = $script:LogoIcon }
 $txtIp.Text = $script:Cfg.ip
 if ($script:Cfg.porta) { $txtPorta.Text = $script:Cfg.porta }
+Set-Splash 'Verificando ferramentas do Free My TV...'
+Find-BuildTools
+$script:FmtConectado = $false
+Read-FmtInputs
+Update-FmtTab
 Set-Splash 'Preparando configurações...'
 Update-ConfigTab
 if ($script:AdbExe) { Log "adb: $($script:AdbExe)" } else { Log 'adb não encontrado.' }
